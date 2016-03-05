@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="McLabCore">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/libs/McLabCore.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
