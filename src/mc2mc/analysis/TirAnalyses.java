@@ -22,7 +22,6 @@ import java.util.ArrayList;
  */
 public class TirAnalyses {
     private String inputFile;
-    private String parameters;
     private String[] shapeDesc;
 
     GenericFile localFile;
@@ -30,11 +29,9 @@ public class TirAnalyses {
     SimpleFunctionCollection localCallgraph;
     ValueAnalysis<AggrValue<BasicMatrixValue>> localAnalysis = null;
 
-    public TirAnalyses(String file, String args){
+    public TirAnalyses(String file, String[] args){
         inputFile = file;
-        parameters = args;
-        shapeDesc = new String[1];
-        shapeDesc[0] = parameters; //change it later
+        shapeDesc = args;
         Init();
     }
 

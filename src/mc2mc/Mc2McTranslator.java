@@ -1,6 +1,7 @@
 package mc2mc;
 
 import com.beust.jcommander.JCommander;
+import mc2mc.analysis.TirAnalyses;
 import mc2mc.mc2lib.PrintMessage;
 import mc2mc.mc2lib.ReadOptions;
 
@@ -11,18 +12,6 @@ public class Mc2McTranslator {
     }
 
     public static void main(String[] args) {
-        setOptions(args);
-        /*if(args.length == 1) {
-
-            String parametern = "DOUBLE&1*1&REAL";
-            TirAnalyses tira = new TirAnalyses(args[0],parametern);
-            //tira.TestTirFunction();
-            //tira.TirValueAnalysis();
-            tira.TestLocalAnalysis();
-        }*/
-    }
-
-    public static void setOptions(String[] args){
         if(args.length == 0){
             PrintMessage.Error("No options given\\nTry --help for usage");
         }
@@ -33,6 +22,15 @@ public class Mc2McTranslator {
 
         runOptions(options, jcommander);
 
+        if(options.arguments.size() == 2) {
+            //String parametern = "DOUBLE&1*1&REAL";
+            String[] parameters = options.arguments.subList(1,2).toArray(new String[0]);
+            PrintMessage.Strings(parameters);
+            TirAnalyses tira = new TirAnalyses(options.arguments.get(0), parameters);
+            //tira.TestTirFunction();
+            //tira.TirValueAnalysis();
+            tira.TestLocalAnalysis();
+        }
     }
 
     public static void runOptions(ReadOptions opt, JCommander jc){
