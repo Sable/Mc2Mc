@@ -7,8 +7,7 @@ import natlab.Parse;
 import natlab.tame.BasicTamerTool;
 import natlab.tame.callgraph.SimpleFunctionCollection;
 import natlab.tame.classes.reference.PrimitiveClassReference;
-import natlab.tame.tamerplus.analysis.AnalysisEngine;
-import natlab.tame.tamerplus.analysis.ReachingDefinitions;
+import natlab.tame.tamerplus.transformation.TransformationEngine;
 import natlab.tame.tir.TIRFunction;
 import natlab.tame.valueanalysis.IntraproceduralValueAnalysis;
 import natlab.tame.valueanalysis.ValueAnalysis;
@@ -68,14 +67,19 @@ public class Mc2McTranslator {
         String[] shapeDesc = {parametern};
         ValueAnalysis<AggrValue<BasicMatrixValue>> analysis = BasicTamerTool.analyze(shapeDesc, env);
 
-        ReachingDefinitions.DEBUG = true;
+        //ReachingDefinitions.DEBUG = true;
+        //UDChain.DEBUG = true;
         for(int i=0;i<analysis.getNodeList().size();i++){
             IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis = analysis.getNodeList().get(i).getAnalysis();
             TIRFunction tirfunc = funcanalysis.getTree();
             System.out.println("function " + tirfunc.getName().getID());
             System.out.println(tirfunc.getPrettyPrinted());
-            AnalysisEngine engine = AnalysisEngine.forAST(tirfunc);
-            engine.getReachingDefinitionsAnalysis().analyze();
+            //AnalysisEngine engine = AnalysisEngine.forAST(tirfunc);
+            //engine.getReachingDefinitionsAnalysis().analyze();
+            //engine.getUDChainAnalysis().analyze(engine);
+            System.out.println("transformed back");
+            TransformationEngine transengine = TransformationEngine.forAST(tirfunc);
+            System.out.println(transengine.getTIRToMcSAFIRWithoutTemp().getTransformedTree().getPrettyPrinted());
         }
     }
 
