@@ -7,6 +7,10 @@ import natlab.Parse;
 import natlab.tame.BasicTamerTool;
 import natlab.tame.callgraph.SimpleFunctionCollection;
 import natlab.tame.classes.reference.PrimitiveClassReference;
+import natlab.tame.tamerplus.analysis.AnalysisEngine;
+import natlab.tame.tamerplus.analysis.ReachingDefinitions;
+import natlab.tame.tir.TIRFunction;
+import natlab.tame.valueanalysis.IntraproceduralValueAnalysis;
 import natlab.tame.valueanalysis.ValueAnalysis;
 import natlab.tame.valueanalysis.aggrvalue.AggrValue;
 import natlab.tame.valueanalysis.basicmatrix.BasicMatrixValue;
@@ -30,10 +34,51 @@ public class Mc2McTranslator {
             System.out.println(ast.getPrettyPrinted());
 //            MatlabVec analysis = new MatlabVec(ast);
 //            ast.analyze(analysis);
+            // Tamer analysis
             Mc2McTranslator analysis = new Mc2McTranslator();
-            analysis.initAnalysis(args[0]);
+            //analysis.initAnalysis(args[0]);
+
+            // reaching definition
+            //ReachingDef rd = new ReachingDef(ast);
+            //rd.analyze();
+            //System.out.println("print reaching definition result:");
+            //ast.analyze(new ReachingDefPrint(rd));
+            //
+            //ReachingDefinitions rds = new ReachingDefinitions(ast);
+            //ReachingDefinitions.DEBUG = true;
+            //AnalysisEngine engine = AnalysisEngine.forAST(ast);
+            //rds.analyze(engine);
+            //UDDUWeb web = engine.getUDDUWebAnalysis();
+            //DUChain.DEBUG = true;
+            //DUChain du = web.getDUChain();
+//          UDChain ud = web.getUDChain();
+            //du.analyze(engine);
+
+            analysis.TestTIR(args[0]);
         }
     }
+
+    public void TestTIR(String file){
+        GenericFile gFile = GenericFile.create(file); //input file
+        FileEnvironment env = new FileEnvironment(gFile);
+        SimpleFunctionCollection callgraph = new SimpleFunctionCollection(env); //contains all functions
+        BasicTamerTool.setDoIntOk(false);
+
+        String parametern = "DOUBLE&1*1&REAL";
+        String[] shapeDesc = {parametern};
+        ValueAnalysis<AggrValue<BasicMatrixValue>> analysis = BasicTamerTool.analyze(shapeDesc, env);
+
+        ReachingDefinitions.DEBUG = true;
+        for(int i=0;i<analysis.getNodeList().size();i++){
+            IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis = analysis.getNodeList().get(i).getAnalysis();
+            TIRFunction tirfunc = funcanalysis.getTree();
+            System.out.println("function " + tirfunc.getName().getID());
+            System.out.println(tirfunc.getPrettyPrinted());
+            AnalysisEngine engine = AnalysisEngine.forAST(tirfunc);
+            engine.getReachingDefinitionsAnalysis().analyze();
+        }
+    }
+
     public void initAnalysis(String filepath){
         GenericFile gFile = GenericFile.create(filepath); //input file
         FileEnvironment env = new FileEnvironment(gFile);
