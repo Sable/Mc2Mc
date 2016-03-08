@@ -1,7 +1,7 @@
 package mc2mc;
 
 import com.beust.jcommander.JCommander;
-import mc2mc.analysis.TirAnalyses;
+import mc2mc.analysis.TirAnalysis;
 import mc2mc.mc2lib.PrintMessage;
 import mc2mc.mc2lib.ReadOptions;
 
@@ -26,10 +26,11 @@ public class Mc2McTranslator {
             //String parametern = "DOUBLE&1*1&REAL";
             String[] parameters = options.arguments.subList(1,2).toArray(new String[0]);
             PrintMessage.Strings(parameters);
-            TirAnalyses tira = new TirAnalyses(options.arguments.get(0), parameters);
+            TirAnalysis tira = new TirAnalysis(options.arguments.get(0), parameters);
             //tira.TestTirFunction();
             //tira.TirValueAnalysis();
-            tira.TestLocalAnalysis();
+            //tira.TestLocalAnalysis();
+            tira.RunLoopInvariant();
         }
     }
 
