@@ -73,9 +73,15 @@ public class TirAnalysis {
         for(int i=0;i<localAnalysis.getNodeList().size();i++){
             IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis = localAnalysis.getNodeList().get(i).getAnalysis();
             TIRFunction tirfunc = funcanalysis.getTree();
+
             PrintMessage.See(tirfunc.getPrettyPrinted());
             AnalysisEngine engine = AnalysisEngine.forAST(tirfunc);
             constructLoopInvariant(engine.getReachingDefinitionsAnalysis());
+
+            TirAnalysisLoopInvariant tirloop = new TirAnalysisLoopInvariant(tirfunc, engine);
+            PrintMessage.Delimeter();
+            tirloop.run();
+            PrintMessage.Delimeter();
         }
 
     }
@@ -92,6 +98,8 @@ public class TirAnalysis {
                 //PrintNodeSet(rds.getReachingDefinitionsForNode(visitedStmt));
             }
         }
+
+
     }
 
     void PrintTirStmts(TIRStatementList tlist){
