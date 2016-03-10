@@ -16,10 +16,10 @@ public class ReadOptions {
     @Parameter(names={"-p","--display"}, description = "list all optimizations")
     public boolean isOptDisplay = false;
 
-    @Parameter(names={"-a","--all"}, description = "Enable all optimization")
+    @Parameter(names={"-a","--all"}, description = "Enable all optimizations")
     public boolean isAll = true;
 
-    @Parameter(names={"-e","--enable"}, arity = 1, description = "Enable all optimization")
+    @Parameter(names={"-e","--enable"}, arity = 1, description = "Enable an optimization")
     public boolean optEnable = true;
 
     @Parameter(names={"-d","--disable"}, arity = 1, description = "Disable all optimization")
