@@ -74,7 +74,7 @@ public class TirAnalysis {
             IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis = localAnalysis.getNodeList().get(i).getAnalysis();
             TIRFunction tirfunc = funcanalysis.getTree();
 
-            PrintMessage.See(tirfunc.getPrettyPrinted());
+            //PrintMessage.See(tirfunc.getPrettyPrinted());
             AnalysisEngine engine = AnalysisEngine.forAST(tirfunc);
             constructLoopInvariant(engine.getReachingDefinitionsAnalysis());
 
@@ -97,6 +97,9 @@ public class TirAnalysis {
                 //PrintMessage.See(tfor.getPrettyPrinted());
                 //PrintNodeSet(rds.getReachingDefinitionsForNode(visitedStmt));
             }
+            else if(visitedStmt instanceof TIRWhileStmt){
+                // the same as for stmt?
+            }
         }
 
 
@@ -105,7 +108,9 @@ public class TirAnalysis {
     void PrintTirStmts(TIRStatementList tlist){
         for(Stmt s : tlist){
             PrintMessage.See("- " + s.getPrettyPrinted());
-            PrintMessage.See("from " + s.getTranslatedEndLine());
+//            PrintMessage.See("getStartLine = " + s.getStartLine());
+//            PrintMessage.See("getTranslatedEndLine =  " + s.getTranslatedEndLine());
+//            PrintMessage.See("getEndLine =  " + s.getEndLine());
         }
     }
 

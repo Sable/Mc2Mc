@@ -1,7 +1,9 @@
 package mc2mc.mc2lib;
 
 import ast.ASTNode;
-import ast.NameExpr;
+import natlab.tame.builtin.Builtin;
+import natlab.tame.tir.TIRStmt;
+import natlab.toolkits.path.BuiltinQuery;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -16,8 +18,9 @@ public class CommonFunction {
         Set<String> rtn = new HashSet<>();
         for(int i=0;i<e.getNumChild();i++){
             ASTNode currentNode = e.getChild(i);
-            if(currentNode instanceof NameExpr){
-                rtn.add(((NameExpr)currentNode).getName().getVarName());
+            if(currentNode instanceof ast.Name){
+                //rtn.add(((NameExpr)currentNode).getName().getVarName());
+                rtn.add(currentNode.getVarName());
             }
             else {
                 rtn.addAll(ExtractName(currentNode));
@@ -25,4 +28,34 @@ public class CommonFunction {
         }
         return rtn;
     }
+
+    public static int FindLineNo(ASTNode e){
+        int lno = 0;
+        for(int i=0;i<e.getNumChild();i++){
+            ASTNode currentNode = e.getChild(i);
+            int localLno = 0;
+            if(currentNode instanceof TIRStmt){
+                localLno = currentNode.getStartLine();
+            }
+            if(localLno !=0){
+                lno = localLno;
+            }
+        }
+        return lno;
+    }
+
+    public static boolean IsBuiltIn(String name){
+        BuiltinQuery query = Builtin.getBuiltinQuery();
+        return query.isBuiltin(name);
+    }
+
+    public static Set<String> VarNameOnly(Set<String> inputSet){
+        Set<String> rtn = new HashSet<>();
+        for(String s : inputSet){
+            if(IsBuiltIn(s)) ;
+            else rtn.add(s);
+        }
+        return rtn;
+    }
+
 }

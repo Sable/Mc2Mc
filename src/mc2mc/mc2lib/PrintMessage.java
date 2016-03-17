@@ -1,5 +1,6 @@
 package mc2mc.mc2lib;
 
+import ast.ASTNode;
 import natlab.tame.tir.*;
 
 import java.util.Map;
@@ -7,12 +8,12 @@ import java.util.Set;
 
 public class PrintMessage {
     public static void Error(String text){
-        System.err.println(text);
+        System.err.println("Error: " + text);
         System.exit(99);
     }
 
     public static void Warning(String text){
-        System.err.println(text);
+        System.err.println("Warning: " + text);
     }
 
     public static void See(String text){
@@ -58,22 +59,23 @@ public class PrintMessage {
 
     /**
      * Print tir node directly
+     *
+     * isSynthetic: node.getStartLine() == 0 && node is not a list
+     *
      */
     public static void GetPrettyPrintTirNode(TIRNode t){
-        System.out.println("- " + t.toString());
+        System.out.println("- " + t.toString() + Tag("GetPrettyPrintTirNode"));
         String rtn = "NOT FOUND";
-        int lno = -1;
+        //int lno = ((ASTNode)t).getStartLine();
+        int lno = CommonFunction.FindLineNo((ASTNode)t);
         if(t instanceof TIRCallStmt){
             rtn = ((TIRCallStmt)t).getPrettyPrinted();
-            lno = ((TIRCallStmt) t).getStartLine();
         }
         else if(t instanceof TIRForStmt){
             rtn = ((TIRForStmt)t).getPrettyPrinted();
-            lno = ((TIRForStmt)t).getStartLine();
         }
         else if(t instanceof TIRAssignLiteralStmt){
             rtn = ((TIRAssignLiteralStmt)t).getPrettyPrinted();
-            lno = ((TIRAssignLiteralStmt)t).getStartLine();
         }
         else if(t instanceof TIRIfStmt){
             rtn = ((TIRIfStmt) t).getPrettyPrinted();
@@ -86,5 +88,10 @@ public class PrintMessage {
         }
         System.out.println(rtn);
         System.out.println("  line no = " + lno);
+    }
+
+
+    private static String Tag(String funcName){
+        return " : from PrintMessage." + funcName;
     }
 }
