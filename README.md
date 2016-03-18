@@ -32,3 +32,15 @@ Platforms:
        list all commands
        Default: false
 ```
+
+## Development notes
+
+**TamerViwer** is used to present the structure of Tamer programs.
+
+```java
+TamerViewer tv = new TamerViewer(node);
+tv.GetViewer();
+```
+
+
+More detail can be found at [wiki](wiki/TamerViewer).

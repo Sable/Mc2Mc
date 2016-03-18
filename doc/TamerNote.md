@@ -4,6 +4,15 @@
 
 ### Function
 
+structure (6 children)
+
+- ast.List : return variables
+- ast.Name : function name
+- ast.List : input parameters
+- ast.List : (unknown)
+- TIRStatementList : all statements
+- ast.List : (unknown)
+
 ### Script
 
 

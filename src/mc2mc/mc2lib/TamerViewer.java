@@ -1,77 +1,99 @@
 package mc2mc.mc2lib;
 
 import ast.ASTNode;
-import natlab.tame.tir.TIRStatementList;
+import natlab.tame.tir.*;
 
 public class TamerViewer {
 
     private ASTNode root;
-    private int bound;
 
     public TamerViewer(ASTNode node){
         root = node;
-        bound = 2;
     }
 
     public TamerViewer(ASTNode node, int depthLimit){
         root = node;
-        bound = depthLimit;
     }
 
     public void GetViewer(){
+        PrintMessage.Delimiter();
         TravesalNode(root, 0);
-        System.out.println("Viewer has done.");
+        PrintMessage.Delimiter();
     }
 
     private void TravesalNode(ASTNode node, int depth){
-        if(depth >= bound) return;
         int ident = depth * 2;
         int size = node.getNumChild();
-        PrintIdent(' ', ident); Msg(PrintNode(node));
-        PrintIdent('|', ident); Msg(Integer.toString(size));
+        PrintIdent('>', ident); Msg(PrintNode(node) + " (children:" + size + ")");
 
-        for(int i=0;i<size;i++){
-            ASTNode currentNode = node.getChild(i);
-            PrintIdent('|',ident); Msg(PrintNode(currentNode));
-            if(currentNode.getNumChild() > 0){
-                TravesalNode(currentNode,depth+1);
+        if(CanGoNext(node)) {
+            for (int i = 0; i < size; i++) {
+                ASTNode currentNode = node.getChild(i);
+                //PrintIdent('|',ident); Msg(PrintNode(currentNode));
+                //if (CanGoNext(currentNode)) {
+                    TravesalNode(currentNode, depth + 1);
+                //}
             }
         }
     }
 
     private String PrintNode(ASTNode node){
-        String rtn = node.dumpString();
+        String rtn = "";
         int len = node.getNumChild();
         String sign = " --> ";
         if(node instanceof ast.Name){
-            rtn += sign + node.getVarName();
+            rtn = "ast.Name" + sign + node.getVarName();
         }
         else if(node instanceof ast.NameExpr){
-            rtn += sign + node.getVarName();
+            rtn = "ast.NameExpr" + sign + node.getVarName();
         }
         else if(node instanceof ast.List) {
             if (node instanceof TIRStatementList) {
-                TIRStatementList slist = (TIRStatementList) node;
-                rtn = "TIRStatementList" + sign + len + "\n";
-                /*if (len < 5) {
-                    int i = 0;
-                    for (ast.Stmt s : slist) {
-                        if(i > 0) rtn += "\n";
-                        rtn += " - " + s.dumpString();
-                        i ++;
-                    }
-                } else {
-                    rtn += " - " + slist.getChild(0).dumpString() + "\n";
-                    rtn += " - " + slist.getChild(1).dumpString() + "\n";
-                    rtn += " - " + slist.getChild(len - 2).dumpString() + "\n";
-                    rtn += " - " + slist.getChild(len - 1).dumpString();
-                }*/
+                rtn = "TIRStatementList";
             }
             else{
                 // normal ast.list
+                rtn = "ast.List";
             }
         }
+        else if(node instanceof TIRAssignLiteralStmt){
+            rtn = GenNodeString("TIRAssignLiteralStmt",sign,node);
+        }
+        else if(node instanceof TIRCallStmt){
+            rtn = GenNodeString("TIRCallStmt",sign,node);
+        }
+        else if(node instanceof TIRForStmt){
+            rtn = "TIRForStmt";
+        }
+        else if(node instanceof TIRArraySetStmt){
+            rtn = GenNodeString("TIRArraySetStmt",sign,node);
+        }
+        else if(node instanceof TIRCopyStmt){
+            rtn = GenNodeString("TIRCopyStmt",sign,node);
+        }
+        else if(node instanceof TIRFunction){
+            rtn = "TIRFunction";
+        }
+        else{
+            rtn = node.dumpString();
+        }
         return rtn;
+    }
+
+    private boolean CanGoNext(ASTNode node){
+        if(node instanceof TIRStatementList)
+            return true;
+        if(node instanceof TIRForStmt)
+            return true;
+        if(node instanceof TIRFunction)
+            return true;
+        if(node instanceof TIRWhileStmt)
+            return true;
+        if(node instanceof TIRIfStmt)
+            return true;
+        if(node instanceof ast.List)
+            return true;
+        return false;
     }
 
     private void PrintIdent(char c, int n){
@@ -82,6 +104,14 @@ public class TamerViewer {
 
     private void Msg(String s){
         System.out.println(s);
+    }
+
+    private String GenNodeString(String name, String sign, ASTNode node){
+        int size = 25 - name.length();
+        String rtn = name;
+        for(int i=0;i<size;i++) rtn += " ";
+        rtn += (sign + "(" + node.getPrettyPrinted().trim() + ")");
+        return rtn;
     }
 
     // do something here
