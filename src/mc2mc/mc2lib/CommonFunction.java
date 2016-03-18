@@ -58,4 +58,14 @@ public class CommonFunction {
         return rtn;
     }
 
+    // debug a local node
+    public static void DebugNodeStructure(ASTNode node){
+        PrintMessage.See("node : " + node.dumpString());
+        PrintMessage.See("     : " + node.getNumChild());
+        for(int i = 0; i < node.getNumChild(); i++){
+            PrintMessage.See("   + : " + node.getChild(i).dumpString());
+        }
+    }
+
+
 }

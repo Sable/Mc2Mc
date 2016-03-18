@@ -35,7 +35,7 @@ public class PrintMessage {
     }
 
     // debugging
-    public static void Delimeter(){
+    public static void Delimiter(){
         Delimiter('-', 10);
     }
 

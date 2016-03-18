@@ -79,9 +79,9 @@ public class TirAnalysis {
             constructLoopInvariant(engine.getReachingDefinitionsAnalysis());
 
             TirAnalysisLoopInvariant tirloop = new TirAnalysisLoopInvariant(tirfunc, engine);
-            PrintMessage.Delimeter();
+            PrintMessage.Delimiter();
             tirloop.run();
-            PrintMessage.Delimeter();
+            PrintMessage.Delimiter();
         }
 
     }

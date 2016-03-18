@@ -6,6 +6,7 @@ import ast.AssignStmt;
 import ast.Stmt;
 import mc2mc.mc2lib.CommonFunction;
 import mc2mc.mc2lib.PrintMessage;
+import mc2mc.mc2lib.TamerViewer;
 import natlab.tame.tamerplus.analysis.AnalysisEngine;
 import natlab.tame.tamerplus.analysis.ReachingDefinitions;
 import natlab.tame.tir.TIRForStmt;
@@ -22,11 +23,14 @@ public class TirAnalysisLoopInvariant extends TIRAbstractNodeCaseHandler {
     private ReachingDefinitions localReachingDef;
 
     private Set<ASTNode> skips;
+    private boolean debug = false;
+    private TamerViewer tv = null;
 
     public TirAnalysisLoopInvariant(ASTNode tree, AnalysisEngine engine){
         root = tree;
         localReachingDef = engine.getReachingDefinitionsAnalysis();
         skips = new HashSet<>();
+        tv = new TamerViewer(tree);
     }
 
     @Override
@@ -37,6 +41,11 @@ public class TirAnalysisLoopInvariant extends TIRAbstractNodeCaseHandler {
 //            PrintMessage.See("== line " + node.getStartLine());
 //            PrintMessage.See(node.dumpString());
 //        }
+
+//        if(node instanceof TIRFunction){
+//            CommonFunction.DebugNodeStructure(node);
+//        }
+
         for(int i=0;i<totalNode;i++){
             ASTNode currentNode = node.getChild(i);
             //PrintMessage.See("current node: " + currentNode.dumpString());
@@ -54,7 +63,7 @@ public class TirAnalysisLoopInvariant extends TIRAbstractNodeCaseHandler {
     @Override
     public void caseTIRForStmt(TIRForStmt node){
         if(skips.contains(node)) return;
-        PrintMessage.See("Entering caseForStmt statement " + node.getStartLine());
+        PrintMessage.See("Entering caseForStmt statement ");
 
         Set<String> nameList = new HashSet<>();
         Map<String, Set<TIRNode>> inputs = localReachingDef.getReachingDefinitionsForNode(node);
@@ -67,45 +76,53 @@ public class TirAnalysisLoopInvariant extends TIRAbstractNodeCaseHandler {
             if(s instanceof AssignStmt) {
                 //PrintMessage.See("assignment : " + s.getPrettyPrinted());
                 insideLoop.add(s);
+                // nameList : all names
                 nameList.addAll(CommonFunction.VarNameOnly(CommonFunction.ExtractName(((AssignStmt)s).getRHS())));
             }
         }
 
-        PrintMessage.StringList(nameList);
-
-        for(String oneName : nameList){
-            Set<TIRNode> stmtList = inputs.get(oneName);
-            for(TIRNode n : stmtList) {
-                if(!insideLoop.contains(n)){
-                    PrintMessage.See("stmt: " + ((ASTNode)n).getPrettyPrinted());
-                }
-                //PrintMessage.See("stmt: " + t.getPrettyPrinted());
-                //PrintMessage.See("    : " + oneName + " -> " + mapInsideLoop.get(t)); //true or null
-            }
+        if(debug) {
+            PrintMessage.StringList(nameList);
         }
-        for(Stmt s : nodeList){
+
+        for(Stmt s : nodeList){ // Are statements in order?
             if(s instanceof AssignStmt){
-                //PrintMessage.StringList(nameList);
-//                for(String one : nameList){
-//                    Set<TIRNode> temp = inputs.get(one);
-//                    if(temp != null) {
-//                        PrintMessage.See(one + "  size of set " + temp.size());
-//                        for (TIRNode tnode : temp) {
-//                            //PrintMessage.GetPrettyPrintTirNode(tnode);
-//                        }
-//                    }
-//                    else{
-//                        if(!CommonFunction.IsBuiltIn(one)) {
-//                            PrintMessage.See("- " + one + " is NOT a built-in.");
-//                        }
-//                    }
-//                }
+                Set<String> localNameList = CommonFunction.VarNameOnly(CommonFunction.ExtractName(((AssignStmt)s).getRHS()));
+                boolean canMove = true;
+                for(String oneName : localNameList){
+                    Set<TIRNode> stmtList = inputs.get(oneName);
+                    for(TIRNode tnode : stmtList){
+                        if(insideLoop.contains(tnode)) {
+                            canMove = false;
+                            break;
+                        }
+                    }
+                    if(!canMove) break;     // can move when all vars defined outside
+                }
+                if(canMove){
+                    PrintMessage.See("can move : " + s.getPrettyPrinted());
+                    MoveNodes((ASTNode)s);  // move statement out of the loop
+                    insideLoop.remove(s);   // update the set
+                }
             }
         }
 
         skips.add(node);
         // go to next node
         caseASTNode(node);
+    }
+
+    private void MoveNodes(ASTNode node){
+        ASTNode closepNode = node.getParent(); //close parent
+        if (closepNode == null) return;
+        ASTNode parentNode = node.getParent().getParent(); //get stmt FOR
+        if (parentNode == null) return;
+        ASTNode grandpNode = parentNode.getParent(); // statement lists
+        if (grandpNode == null) return;
+        int grandpCursor = grandpNode.getIndexOfChild(parentNode);
+        int removeCursor = node.getParent().getIndexOfChild(node);
+        grandpNode.insertChild(node, grandpCursor);
+        closepNode.removeChild(removeCursor); //remove old node
     }
 
 
@@ -117,6 +134,8 @@ public class TirAnalysisLoopInvariant extends TIRAbstractNodeCaseHandler {
         //PrintMessage.See("root: " + root.dumpString());
         //PrintMessage.See("Is tir node? " + (root instanceof TIRNode));
         root.analyze(this);
+        PrintMessage.See("After loop invariants:");
+        tv.GetViewer(); // final output
     }
 
 }
