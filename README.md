@@ -35,7 +35,7 @@ Platforms:
 
 ## Development notes
 
-**TamerViwer** is used to present the structure of Tamer programs.
+**TamerViewer** is used to present the structure of Tamer programs.
 
 ```java
 TamerViewer tv = new TamerViewer(node);
@@ -43,4 +43,4 @@ tv.GetViewer();
 ```
 
 
-More detail can be found at [wiki](wiki/TamerViewer).
+More detail can be found at [wiki](https://github.com/Sable/Mc2Mc/wiki/TamerViewer).
