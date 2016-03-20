@@ -65,6 +65,9 @@ public class TamerViewer {
         else if(node instanceof TIRForStmt){
             rtn = "TIRForStmt";
         }
+        else if(node instanceof TIRWhileStmt){
+            rtn = "TIRWhileStmt";
+        }
         else if(node instanceof TIRArraySetStmt){
             rtn = GenNodeString("TIRArraySetStmt",sign,node);
         }
@@ -73,6 +76,12 @@ public class TamerViewer {
         }
         else if(node instanceof TIRFunction){
             rtn = "TIRFunction";
+        }
+        else if(node instanceof TIRCommentStmt){
+            rtn = "TIRCommentStmt //";
+        }
+        else if(node instanceof ast.AssignStmt){ //should be put at the end
+            rtn = GenNodeString("ast.AssignStmt",sign,node);
         }
         else{
             rtn = node.dumpString();
