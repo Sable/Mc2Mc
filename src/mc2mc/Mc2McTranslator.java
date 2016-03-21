@@ -30,7 +30,16 @@ public class Mc2McTranslator {
             //tira.TestTirFunction();
             //tira.TirValueAnalysis();
             //tira.TestLocalAnalysis();
-            tira.RunLoopInvariant();
+
+            if(options.isOptViewer){
+                tira.RunTamerViewer();
+            }
+            else {
+                tira.RunLoopInvariant();
+            }
+        }
+        else{
+            PrintMessage.See("Please check here.");
         }
     }
 

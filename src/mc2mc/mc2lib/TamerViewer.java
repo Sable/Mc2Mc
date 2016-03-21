@@ -6,6 +6,7 @@ import natlab.tame.tir.*;
 public class TamerViewer {
 
     private ASTNode root;
+    private String[] structFunction = {"Returned values","Function name","Parameters","Unknown","Function body","Unknown"};
 
     public TamerViewer(ASTNode node){
         root = node;
@@ -17,24 +18,22 @@ public class TamerViewer {
 
     public void GetViewer(){
         PrintMessage.Delimiter();
-        TravesalNode(root, 0);
+        TravesalNode(root, 0, -1);
         PrintMessage.Delimiter();
     }
 
-    private void TravesalNode(ASTNode node, int depth){
+    private void TravesalNode(ASTNode node, int depth, int funcLayer) {
         int ident = depth * 2;
         int size = node.getNumChild();
-        PrintIdent('>', ident); Msg(PrintNode(node) + " (children:" + size + ")");
+        PrintIdent('>', ident);
+        Msg(PrintNode(node) + ((funcLayer >= 0) ? " (" + structFunction[funcLayer] + ")" : (size > 0) ? " (children:" + size + ")" : ""));
 
-        if(CanGoNext(node)) {
+        if (CanGoNext(node)) {
             for (int i = 0; i < size; i++) {
-                ASTNode currentNode = node.getChild(i);
-                //PrintIdent('|',ident); Msg(PrintNode(currentNode));
-                //if (CanGoNext(currentNode)) {
-                    TravesalNode(currentNode, depth + 1);
-                //}
+                TravesalNode(node.getChild(i), depth + 1, (node instanceof TIRFunction) ? i : -1);
             }
         }
+
     }
 
     private String PrintNode(ASTNode node){
@@ -68,6 +67,9 @@ public class TamerViewer {
         else if(node instanceof TIRWhileStmt){
             rtn = "TIRWhileStmt";
         }
+        else if(node instanceof TIRIfStmt){
+            rtn = "TIRIfStmt";
+        }
         else if(node instanceof TIRArraySetStmt){
             rtn = GenNodeString("TIRArraySetStmt",sign,node);
         }
@@ -80,8 +82,26 @@ public class TamerViewer {
         else if(node instanceof TIRCommentStmt){
             rtn = "TIRCommentStmt //";
         }
+        else if(node instanceof TIRBreakStmt){
+            rtn = "TIRBreakStmt";
+        }
+        else if(node instanceof TIRContinueStmt){
+            rtn = "TIRContinueStmt";
+        }
+        else if(node instanceof TIRGlobalStmt){
+            rtn = "TIRGlobalStmt";
+        }
         else if(node instanceof ast.AssignStmt){ //should be put at the end
             rtn = GenNodeString("ast.AssignStmt",sign,node);
+        }
+        else if(node instanceof ast.IfBlock){
+            rtn = "ast.IfBlock";
+        }
+        else if(node instanceof ast.ElseBlock){
+            rtn = "ast.ElseBlock";
+        }
+        else if(node instanceof ast.Opt){
+            rtn = "ast.Opt";
         }
         else{
             rtn = node.dumpString();
@@ -101,6 +121,12 @@ public class TamerViewer {
         if(node instanceof TIRIfStmt)
             return true;
         if(node instanceof ast.List)
+            return true;
+        if(node instanceof ast.IfBlock)
+            return true;
+        if(node instanceof ast.ElseBlock)
+            return true;
+        if(node instanceof ast.Opt)
             return true;
         return false;
     }

@@ -2,6 +2,7 @@ package mc2mc.analysis;
 
 import ast.Stmt;
 import mc2mc.mc2lib.PrintMessage;
+import mc2mc.mc2lib.TamerViewer;
 import natlab.tame.BasicTamerTool;
 import natlab.tame.callgraph.SimpleFunctionCollection;
 import natlab.tame.tamerplus.analysis.AnalysisEngine;
@@ -152,4 +153,15 @@ public class TirAnalysis {
         return list;
     }
     */
+
+    public void RunTamerViewer(){
+        PrintMessage.See("Run Tamer viewer");
+        for(int i=0;i<localAnalysis.getNodeList().size();i++){
+            IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis = localAnalysis.getNodeList().get(i).getAnalysis();
+            TIRFunction tirfunc = funcanalysis.getTree();
+            TamerViewer tv = new TamerViewer(tirfunc);
+            tv.GetViewer();
+            PrintMessage.See(tirfunc.getPrettyPrinted());
+        }
+    }
 }
