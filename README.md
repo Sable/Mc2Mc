@@ -9,8 +9,8 @@ static analyses and vectorization.
 
 Platforms:
 
-- Tamer framework (Developed by Sable/McGill)
-- IntelliJ IDEA (tested under v15.04)
+- Tamer framework (Developed at Sable/McGill)
+- IntelliJ IDEA (tested under v15.0.4)
 
 ## Options
 
@@ -31,11 +31,14 @@ Platforms:
     -h, --help
        list all commands
        Default: false
+    -v, --view
+       Tamer viewer
+       Default: false
 ```
 
 ## Development notes
 
-**TamerViewer** is used to present the structure of Tamer programs.
+**TamerViewer** is used to present the structure of Tame IR.
 
 ```java
 TamerViewer tv = new TamerViewer(node);
