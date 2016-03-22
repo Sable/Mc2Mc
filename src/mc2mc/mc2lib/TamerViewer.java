@@ -6,7 +6,7 @@ import natlab.tame.tir.*;
 public class TamerViewer {
 
     private ASTNode root;
-    private String[] structFunction = {"Returned values","Function name","Parameters","Unknown","Function body","Unknown"};
+    private String[] structFunction = {"Output parameters","Function name","Input parameters","Help comments","Function body","Nested functions"};
 
     public TamerViewer(ASTNode node){
         root = node;
