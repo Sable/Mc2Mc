@@ -33,5 +33,9 @@ Structure (2 children)
 Structure
 
 
+McLint:
+
+https://github.com/Sable/mclab-core/blob/50d7a655adfc62d963905792e490b73cffa69de3/languages/Natlab/src/mclint/analyses/Shadowing.java
+
 
 
