@@ -12,17 +12,13 @@ public class TamerViewer {
         root = node;
     }
 
-    public TamerViewer(ASTNode node, int depthLimit){
-        root = node;
-    }
-
     public void GetViewer(){
         PrintMessage.Delimiter();
-        TravesalNode(root, 0, -1);
+        TraversalNode(root, 0, -1);
         PrintMessage.Delimiter();
     }
 
-    private void TravesalNode(ASTNode node, int depth, int funcLayer) {
+    private void TraversalNode(ASTNode node, int depth, int funcLayer) {
         int ident = depth * 2;
         int size = node.getNumChild();
         PrintIdent('>', ident);
@@ -30,7 +26,7 @@ public class TamerViewer {
 
         if (CanGoNext(node)) {
             for (int i = 0; i < size; i++) {
-                TravesalNode(node.getChild(i), depth + 1, (node instanceof TIRFunction) ? i : -1);
+                TraversalNode(node.getChild(i), depth + 1, (node instanceof TIRFunction) ? i : -1);
             }
         }
 
@@ -51,8 +47,7 @@ public class TamerViewer {
                 rtn = "TIRStatementList";
             }
             else{
-                // normal ast.list
-                rtn = "ast.List";
+                rtn = "ast.List"; // normal ast.list
             }
         }
         else if(node instanceof TIRAssignLiteralStmt){
