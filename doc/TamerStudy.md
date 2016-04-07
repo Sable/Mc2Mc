@@ -1,8 +1,10 @@
 
 ## Source
 
-Tamer thesis by Anton Dubrau
- 
+- Tamer thesis by Anton Dubrau
+- [Writing analyses using Tamer](https://github.com/Sable/mclab-core/wiki/Writing-analyses-using-Tamer)
+- [Using McLab for development](https://github.com/Sable/mclab-core/wiki/Using-McLab-for-development)
+
 ### General ideas
 
 - Tamer is designed for static languages, such as FORTRAN
