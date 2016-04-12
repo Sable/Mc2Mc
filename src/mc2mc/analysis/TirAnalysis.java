@@ -70,19 +70,32 @@ public class TirAnalysis {
     }
 
     public void RunLoopInvariant(){
-        PrintMessage.See("Run loop invariant");
+        int op = 1;
         for(int i=0;i<localAnalysis.getNodeList().size();i++){
             IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis = localAnalysis.getNodeList().get(i).getAnalysis();
             TIRFunction tirfunc = funcanalysis.getTree();
 
-            //PrintMessage.See(tirfunc.getPrettyPrinted());
+            PrintMessage.See(tirfunc.getPrettyPrinted());
+//            PrintMessage.See(funcanalysis.getResult().toString());
             AnalysisEngine engine = AnalysisEngine.forAST(tirfunc);
             constructLoopInvariant(engine.getReachingDefinitionsAnalysis());
 
-            TirAnalysisLoopInvariant tirloop = new TirAnalysisLoopInvariant(tirfunc, engine);
-            PrintMessage.Delimiter();
-            tirloop.run();
-            PrintMessage.Delimiter();
+            if(op == 0) {
+                // Loop invariant
+                PrintMessage.See("Run loop invariant");
+                TirAnalysisLoopInvariant tirloop = new TirAnalysisLoopInvariant(tirfunc, engine);
+                PrintMessage.Delimiter();
+                tirloop.run();
+                PrintMessage.Delimiter();
+            }
+            else if(op == 1) {
+                // Available sub-expression
+                PrintMessage.See("** Run available sub-expression **");
+                TirAnalysisSubExpr tirsub = new TirAnalysisSubExpr(tirfunc);
+                tirsub.analyze();
+                PrintMessage.See("start tirfun analyze");
+                tirfunc.analyze(new TirAnalysisSubExprPrint(tirsub));
+            }
         }
 
     }
