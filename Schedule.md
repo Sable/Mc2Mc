@@ -1,5 +1,13 @@
 Progress schedule
 
+(10 days in June: revise paper)
+
+June 10
+
+...
+
+(10 days in May: conduct experiments)
+
 May 31
 
 May 30
@@ -22,6 +30,6 @@ May 23
 
 May 22
     
-    - Report revised draft (brief version)
+    - Report the revised draft (brief version)
     - Create benchmark for experiment
 
