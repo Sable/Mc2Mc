@@ -33,11 +33,14 @@ public class TirAnalysisSubExprPrint extends TIRAbstractNodeCaseHandler {
     public void caseTIRCallStmt(TIRCallStmt callstmt){
         String stringrhs = callstmt.getRHS().getPrettyPrinted();
         PrintMessage.See("======");
-        PrintMessage.See("Input set:");
-        printSet(subexpranalysis.getInFlowSets().get(callstmt).get(stringrhs));
-        PrintMessage.See("Output set:");
-        printSet(subexpranalysis.getOutFlowSets().get(callstmt).get(stringrhs));
+//        PrintMessage.See("Input set:");
+//        PrintMessage.See()
+//        printSet(subexpranalysis.getInFlowSets().get(callstmt).get(stringrhs));
+        PrintMessage.See("Output set: (" + callstmt.getPrettyPrinted().trim() + ")");
+        PrintMessage.printMap(subexpranalysis.getOutFlowSets().get(callstmt));
+//        printSet(subexpranalysis.getOutFlowSets().get(callstmt).get(stringrhs));
     }
+
 
     private void printSet(Set<TIRNode> defs) {
         if(defs == null){

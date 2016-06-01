@@ -20,26 +20,23 @@ public class Mc2McTranslator {
         JCommander jcommander = new JCommander(options, args);
         jcommander.setProgramName("Mc2Mc");
 
+        PrintMessage.arrayList(options.arguments, "Option information");
+
         runOptions(options, jcommander);
 
-        if(options.arguments.size() == 2) {
-            //String parametern = "DOUBLE&1*1&REAL";
-            String[] parameters = options.arguments.subList(1,2).toArray(new String[0]);
-            PrintMessage.Strings(parameters);
-            TirAnalysis tira = new TirAnalysis(options.arguments.get(0), parameters);
-            //tira.TestTirFunction();
-            //tira.TirValueAnalysis();
-            //tira.TestLocalAnalysis();
+        int argSize =options.arguments.size();
+        String[] parameters = options.arguments.subList(1,argSize).toArray(new String[0]);
+        String mainFile = options.arguments.get(0);
+        TirAnalysis tira = new TirAnalysis(mainFile, parameters);
+        //tira.TestTirFunction();
+        //tira.TirValueAnalysis();
+        //tira.TestLocalAnalysis();
 
-            if(options.isOptViewer){
-                tira.RunTamerViewer();
-            }
-            else {
-                tira.RunLoopInvariant();
-            }
+        if(options.isOptViewer){
+            tira.RunTamerViewer();
         }
-        else{
-            PrintMessage.See("Please check here.");
+        else {
+            tira.RunLoopInvariant();
         }
     }
 

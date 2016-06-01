@@ -13,9 +13,9 @@ public class TamerViewer {
     }
 
     public void GetViewer(){
-        PrintMessage.Delimiter();
+        PrintMessage.delimiter();
         TraversalNode(root, 0, -1);
-        PrintMessage.Delimiter();
+        PrintMessage.delimiter();
     }
 
     private void TraversalNode(ASTNode node, int depth, int funcLayer) {
@@ -114,6 +114,8 @@ public class TamerViewer {
         if(node instanceof TIRWhileStmt)
             return true;
         if(node instanceof TIRIfStmt)
+            return true;
+        if(node instanceof TIRCallStmt)
             return true;
         if(node instanceof ast.List)
             return true;

@@ -31,5 +31,5 @@ May 23
 May 22
     
     - Report the revised draft (brief version)
-    - Create benchmark for experiment
+    - Create benchmarks for experiment
 

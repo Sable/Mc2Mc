@@ -76,7 +76,7 @@ public class TirAnalysis {
             TIRFunction tirfunc = funcanalysis.getTree();
 
             PrintMessage.See(tirfunc.getPrettyPrinted());
-//            PrintMessage.See(funcanalysis.getResult().toString());
+            PrintMessage.See(funcanalysis.getResult().toString());
             AnalysisEngine engine = AnalysisEngine.forAST(tirfunc);
             constructLoopInvariant(engine.getReachingDefinitionsAnalysis());
 
@@ -84,15 +84,16 @@ public class TirAnalysis {
                 // Loop invariant
                 PrintMessage.See("Run loop invariant");
                 TirAnalysisLoopInvariant tirloop = new TirAnalysisLoopInvariant(tirfunc, engine);
-                PrintMessage.Delimiter();
+                PrintMessage.delimiter();
                 tirloop.run();
-                PrintMessage.Delimiter();
+                PrintMessage.delimiter();
             }
             else if(op == 1) {
                 // Available sub-expression
                 PrintMessage.See("** Run available sub-expression **");
-                TirAnalysisSubExpr tirsub = new TirAnalysisSubExpr(tirfunc);
+                TirAnalysisSubExpr tirsub = new TirAnalysisSubExpr(tirfunc, engine);
                 tirsub.analyze();
+//                tirsub.getFinalInfo();
                 PrintMessage.See("start tirfun analyze");
                 tirfunc.analyze(new TirAnalysisSubExprPrint(tirsub));
             }

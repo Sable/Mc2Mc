@@ -3,6 +3,7 @@ package mc2mc.mc2lib;
 import ast.ASTNode;
 import natlab.tame.tir.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,6 +21,10 @@ public class PrintMessage {
         System.out.println(text);
     }
 
+    public static void See(String text, String other){
+        System.out.println("[" + other + "] : " + text);
+    }
+
     public static void Strings(String[] strs){
         System.out.println("Print strings:");
         for(String s : strs){
@@ -33,13 +38,28 @@ public class PrintMessage {
             System.out.println("- " + x);
         }
     }
+    
+    public static void arrayList(List<String> x){
+        System.out.println("length = " + x.size());
+        int c = 0;
+        for(String x0 : x) {
+            System.out.println("[" + c + "] " + x0);
+            c = c + 1;
+        }
 
-    // debugging
-    public static void Delimiter(){
-        Delimiter('-', 10);
+    }
+    public static void arrayList(List<String> x, String text){
+        System.out.println(text);
+        arrayList(x);
+        delimiter();
     }
 
-    public static void Delimiter(char x, int n){
+    // debugging
+    public static void delimiter(){
+        delimiter('-', 10);
+    }
+
+    public static void delimiter(char x, int n){
         for(int i=0;i<n;i++){
             System.out.print(x);
         }
@@ -54,6 +74,12 @@ public class PrintMessage {
                 //TIRStmt s = (TIRStmt)t;
                 System.out.println("- " + t.toString());
             }
+        }
+    }
+
+    public static void printMap(Map<TIRNode, Integer> x){
+        for(TIRNode t : x.keySet()){
+            PrintMessage.See(((TIRCallStmt)t).getPrettyPrinted().trim() + " : " + x.get(t));
         }
     }
 
