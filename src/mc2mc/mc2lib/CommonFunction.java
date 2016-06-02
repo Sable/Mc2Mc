@@ -44,7 +44,7 @@ public class CommonFunction {
         return lno;
     }
 
-    public static boolean IsBuiltIn(String name){
+    public static boolean isBuiltIn(String name){
         BuiltinQuery query = Builtin.getBuiltinQuery();
         return query.isBuiltin(name);
     }
@@ -52,7 +52,7 @@ public class CommonFunction {
     public static Set<String> VarNameOnly(Set<String> inputSet){
         Set<String> rtn = new HashSet<>();
         for(String s : inputSet){
-            if(IsBuiltIn(s)) ;
+            if(isBuiltIn(s)) ;
             else rtn.add(s);
         }
         return rtn;
@@ -67,5 +67,8 @@ public class CommonFunction {
         }
     }
 
+    public static boolean isTemp(String x){
+        return x.startsWith("mc_t");
+    }
 
 }

@@ -70,7 +70,7 @@ public class TirAnalysis {
     }
 
     public void RunLoopInvariant(){
-        int op = 1;
+        int op = 2;
         for(int i=0;i<localAnalysis.getNodeList().size();i++){
             IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis = localAnalysis.getNodeList().get(i).getAnalysis();
             TIRFunction tirfunc = funcanalysis.getTree();
@@ -96,6 +96,12 @@ public class TirAnalysis {
 //                tirsub.getFinalInfo();
                 PrintMessage.See("start tirfun analyze");
                 tirfunc.analyze(new TirAnalysisSubExprPrint(tirsub));
+            }
+            else if(op == 2){
+                PrintMessage.See("** Run data dependence analysis **");
+                TirAnalysisDep tirDep = new TirAnalysisDep(engine);
+                tirfunc.analyze(tirDep);
+                tirDep.printRWSet();
             }
         }
 
