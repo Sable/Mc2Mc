@@ -72,15 +72,32 @@ public class PrintMessage {
             Set<TIRNode> mynode = (Set<TIRNode>)myentry.getValue();
             for(TIRNode t : mynode){
                 //TIRStmt s = (TIRStmt)t;
-                System.out.println("- " + t.toString());
+                System.out.println("- " + ((ASTNode)t).getPrettyPrinted());
             }
         }
+    }
+
+    public static void printMap2(Map<TIRNode, Set<TIRNode>> input){
+        See("printMap2:");
+        for(TIRNode t : input.keySet()){
+            int n = 0;
+            See("- " + printString(t).trim() );
+            for(TIRNode one : input.get(t)){
+                See(n++ + ": " + printString(one));
+            }
+            See(" total " + n);
+        }
+        See("printMap2 ends");
     }
 
     public static void printMap(Map<TIRNode, Integer> x){
         for(TIRNode t : x.keySet()){
             PrintMessage.See(((TIRCallStmt)t).getPrettyPrinted().trim() + " : " + x.get(t));
         }
+    }
+
+    public static String printString(TIRNode x){
+        return ((ASTNode)x).getPrettyPrinted();
     }
 
     /**

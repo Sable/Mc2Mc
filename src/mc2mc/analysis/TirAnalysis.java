@@ -1,5 +1,6 @@
 package mc2mc.analysis;
 
+import ast.ASTNode;
 import ast.Stmt;
 import mc2mc.mc2lib.PrintMessage;
 import mc2mc.mc2lib.TamerViewer;
@@ -11,6 +12,7 @@ import natlab.tame.tamerplus.transformation.TransformationEngine;
 import natlab.tame.tir.*;
 import natlab.tame.valueanalysis.IntraproceduralValueAnalysis;
 import natlab.tame.valueanalysis.ValueAnalysis;
+import natlab.tame.valueanalysis.ValueFlowMap;
 import natlab.tame.valueanalysis.aggrvalue.AggrValue;
 import natlab.tame.valueanalysis.basicmatrix.BasicMatrixValue;
 import natlab.toolkits.filehandling.GenericFile;
@@ -70,15 +72,32 @@ public class TirAnalysis {
     }
 
     public void RunLoopInvariant(){
-        int op = 2;
+        int op = -1;
         for(int i=0;i<localAnalysis.getNodeList().size();i++){
-            IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis = localAnalysis.getNodeList().get(i).getAnalysis();
+            IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis =
+                    localAnalysis.getNodeList().get(i).getAnalysis();
             TIRFunction tirfunc = funcanalysis.getTree();
 
             PrintMessage.See(tirfunc.getPrettyPrinted());
             PrintMessage.See(funcanalysis.getResult().toString());
             AnalysisEngine engine = AnalysisEngine.forAST(tirfunc);
             constructLoopInvariant(engine.getReachingDefinitionsAnalysis());
+
+            Map<ASTNode, ValueFlowMap<AggrValue<BasicMatrixValue>>> funcValueMap =
+                    funcanalysis.getOutFlowSets();
+
+//            ValueFlowMap<AggrValue<BasicMatrixValue>> currentFlows = funcanalysis.getOutFlowSets().get(tirfunc);
+//            // Print
+//            for(String s : currentFlows.keySet()){
+//                PrintMessage.See("s = " + s);
+//                ValueSet<AggrValue<BasicMatrixValue>> x = currentFlows.get(s);
+//                for(AggrValue<BasicMatrixValue> one : x.values()){
+//                    BasicMatrixValue t = (BasicMatrixValue)one;
+//                    Shape s0 =t.getShape();
+//                    PrintMessage.See("Shape = " + s0.toString());
+//                }
+//            }
+
 
             if(op == 0) {
                 // Loop invariant
@@ -99,9 +118,9 @@ public class TirAnalysis {
             }
             else if(op == 2){
                 PrintMessage.See("** Run data dependence analysis **");
-                TirAnalysisDep tirDep = new TirAnalysisDep(engine);
-                tirfunc.analyze(tirDep);
-                tirDep.printRWSet();
+                TirAnalysisLoop tirLoop = new TirAnalysisLoop(engine, funcValueMap);
+                tirfunc.analyze(tirLoop);
+                tirLoop.printRWSet();
             }
         }
 
