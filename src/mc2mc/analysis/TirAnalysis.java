@@ -2,10 +2,12 @@ package mc2mc.analysis;
 
 import ast.ASTNode;
 import ast.Stmt;
+import mc2mc.mc2lib.CommonFunction;
 import mc2mc.mc2lib.PrintMessage;
 import mc2mc.mc2lib.TamerViewer;
 import natlab.tame.BasicTamerTool;
 import natlab.tame.callgraph.SimpleFunctionCollection;
+import natlab.tame.callgraph.StaticFunction;
 import natlab.tame.tamerplus.analysis.AnalysisEngine;
 import natlab.tame.tamerplus.analysis.ReachingDefinitions;
 import natlab.tame.tamerplus.transformation.TransformationEngine;
@@ -72,7 +74,14 @@ public class TirAnalysis {
     }
 
     public void RunLoopInvariant(){
-        int op = -1;
+        int op = 2;
+
+        // Add all function names
+        for(StaticFunction f : localAnalysis.getFunctionCollection().getAllFunctions()){
+            CommonFunction.addFuncName(f.getName());
+        }
+        CommonFunction.setValueAnalysis(localAnalysis);
+
         for(int i=0;i<localAnalysis.getNodeList().size();i++){
             IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis =
                     localAnalysis.getNodeList().get(i).getAnalysis();
@@ -203,4 +212,5 @@ public class TirAnalysis {
             PrintMessage.See(tirfunc.getPrettyPrinted());
         }
     }
+
 }
