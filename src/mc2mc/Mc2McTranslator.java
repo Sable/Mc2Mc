@@ -53,5 +53,4 @@ public class Mc2McTranslator {
             System.exit(0);
         }
     }
-
 }

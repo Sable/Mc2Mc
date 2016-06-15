@@ -31,10 +31,12 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
     public Map<TIRNode, Map<String, Set<TIRNode>>> fUDMap = null;
     private Map<TIRNode, Set<TIRNode>> loopDep = null;
     private Map<ASTNode, ValueFlowMap<AggrValue<BasicMatrixValue>>> fValueMap;
+    private AnalysisEngine localEngine = null;
 
     public TirAnalysisLoop(AnalysisEngine engine, Map<ASTNode, ValueFlowMap<AggrValue<BasicMatrixValue>>> valueMap){
         fUDMap = engine.getUDChainAnalysis().getChain(); //UDChain
         fValueMap = valueMap;
+        localEngine = engine;
     }
 
     @Override
@@ -120,14 +122,21 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
             ASTNode t = node.getChild(i);
             numberFor += findInnerFor(t);
         }
+        int op = 2;
         if(isFor && numberFor == 1 && interestingLoop(node)){
 //            collectRW((TIRForStmt)node);
 //            buildDepGraph((TIRForStmt)node);
 //            processStmt((TIRForStmt) node, fValueMap.get(node));
-            TirAnalysisVector tirVector = new TirAnalysisVector(node, fValueMap);
-            tirVector.analyze();
-            PrintMessage.See("Starting print flow information");
-            node.analyze(new TirAnalysisLoopPrint(tirVector));
+            if(op == 1) {
+                TirAnalysisVector tirVector = new TirAnalysisVector(node, fValueMap);
+                tirVector.analyze();
+                PrintMessage.See("Starting print flow information");
+                node.analyze(new TirAnalysisLoopPrint(tirVector));
+            }
+            else {
+                TirAnalysisDep tirDep = new TirAnalysisDep(localEngine, node);
+                tirDep.run();
+            }
         }
         return numberFor;
     }

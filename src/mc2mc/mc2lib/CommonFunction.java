@@ -1,6 +1,6 @@
 package mc2mc.mc2lib;
 
-import ast.ASTNode;
+import ast.*;
 import natlab.tame.builtin.Builtin;
 import natlab.tame.callgraph.StaticFunction;
 import natlab.tame.tir.TIRCallStmt;

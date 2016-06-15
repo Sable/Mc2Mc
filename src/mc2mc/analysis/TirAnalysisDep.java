@@ -28,9 +28,9 @@ public class TirAnalysisDep {
         localEngine = engine;
         localUDMap = engine.getUDChainAnalysis().getChain();
         localDUMap = engine.getDUChainAnalysis().getChain();
+        root = node;
         iterator = getIterator(root);
         isLoop = !iterator.isEmpty();
-        root = node;
     }
 
     public void run(){
@@ -140,6 +140,7 @@ public class TirAnalysisDep {
                                         if(isDep){
                                             // todo: find out what kind of relationship
                                         }
+                                        PrintMessage.See("isDep " + isDep);
                                     }
                                 }
                             }
@@ -190,6 +191,8 @@ public class TirAnalysisDep {
 
     public NumValue[] processArrayPar(Expr node, Map<String, Set<TIRNode>> defSet, String iter){
         NumValue[] nv = new NumValue[2];
+        nv[0] = new NumValue();
+        nv[1] = new NumValue();
         if(node instanceof NameExpr){
             String indexName = ((NameExpr) node).getName().getID();
             if(indexName.equals(iter)){
@@ -211,9 +214,15 @@ public class TirAnalysisDep {
 
     public NumValue[] processParDef(ASTNode prev, String iter){
         NumValue[] nv = new NumValue[2];
+        nv[0] = new NumValue();
+        nv[1] = new NumValue();
         if(prev instanceof TIRAssignLiteralStmt){
-            nv[0].setN(0);
-            nv[1].setN(((TIRAssignLiteralStmt) prev).getRHS().hashCode()); //?string?double?
+            LiteralExpr rhs = ((TIRAssignLiteralStmt) prev).getRHS();
+            if(rhs instanceof IntLiteralExpr){
+                nv[0].setN(0);
+                nv[1].setN(((IntLiteralExpr) rhs).getValue().getValue().intValue());
+            }
+            else nv[0].setU();
         }
         else if(prev instanceof TIRCallStmt){
             Map<String, Set<TIRNode>> defSet = localUDMap.get(prev);
@@ -322,6 +331,7 @@ public class TirAnalysisDep {
     }
 
     public boolean gcdTest(int a1, int b1, int a2, int b2){
+        PrintMessage.See(" (" + a1 + "," + b1 + "," + a2 + "," + b2 + ")");
         return ((b2-b1)%(myGCD(a1,a2))==0);
     }
 
