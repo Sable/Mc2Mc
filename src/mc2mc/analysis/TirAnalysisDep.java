@@ -260,7 +260,7 @@ public class TirAnalysisDep {
                     saveValue(defSet, arg2, iter, nv);
                 }
             }
-            else if(op.equals("multiply")){
+            else if(op.equals("multiply") || op.equals("mtimes")){ // mtimes or multiply
                 String arg1 = ((TIRCallStmt) prev).getArguments().getName(0).getID();
                 String arg2 = ((TIRCallStmt) prev).getArguments().getName(1).getID();
                 if(arg1.equals(iter)){

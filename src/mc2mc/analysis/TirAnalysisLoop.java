@@ -4,6 +4,7 @@ import ast.*;
 import mc2mc.mc2lib.CommonFunction;
 import mc2mc.mc2lib.PrintMessage;
 import natlab.tame.tamerplus.analysis.AnalysisEngine;
+import natlab.tame.tir.TIRCommentStmt;
 import natlab.tame.tir.TIRForStmt;
 import natlab.tame.tir.TIRIfStmt;
 import natlab.tame.tir.TIRNode;
@@ -289,6 +290,7 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
             ASTNode currentNode = newNode.getChild(i);
             if(currentNode instanceof AssignStmt);
             else if(currentNode instanceof TIRIfStmt) res = interestingLoop(currentNode); //? check if-structure
+            else if(currentNode instanceof TIRCommentStmt); // %comment
             else res = false;
 
             if(res == false) {
