@@ -123,12 +123,13 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
             ASTNode t = node.getChild(i);
             numberFor += findInnerFor(t);
         }
-        int op = 2;
+        int op = 1;
         if(isFor && numberFor == 1 && interestingLoop(node)){
 //            collectRW((TIRForStmt)node);
 //            buildDepGraph((TIRForStmt)node);
 //            processStmt((TIRForStmt) node, fValueMap.get(node));
             if(op == 1) {
+                // whole analysis
                 TirAnalysisVector tirVector = new TirAnalysisVector(node, fValueMap);
                 tirVector.analyze();
                 PrintMessage.See("Starting print flow information");

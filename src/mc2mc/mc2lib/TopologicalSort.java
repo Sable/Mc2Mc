@@ -14,16 +14,27 @@ import java.util.Map;
  */
 public class TopologicalSort {
     Map<ASTNode, DepNode> localStmtMap;
+    Map<ASTNode, Boolean> localFlagMap;
     List<ASTNode> outputList = null;
+    public static boolean debug = false;
 
-    public TopologicalSort(Map<ASTNode, DepNode> stmtMap){
+    public TopologicalSort(Map<ASTNode, DepNode> stmtMap, Map<ASTNode, Boolean> cycleMap){
         localStmtMap = stmtMap;
+        localFlagMap = cycleMap;
     }
 
     public List<ASTNode> sort(){
         init();
-        mainSort(localStmtMap);
-        printOutputList();
+        if(debug) {
+            PrintMessage.See("localFlagMap:");
+            for (ASTNode a : localFlagMap.keySet()) {
+                PrintMessage.See("[" + localFlagMap.get(a) + "] " + a.getPrettyPrinted().trim());
+            }
+        }
+        while (mainSort(localStmtMap) > 0);
+        if(debug) {
+            printOutputList();
+        }
         return outputList;
     }
 
@@ -31,30 +42,32 @@ public class TopologicalSort {
         outputList = new ArrayList<>();
     }
 
-    private void mainSort(Map<ASTNode, DepNode> smallMap){
+    private int mainSort(Map<ASTNode, DepNode> smallMap){
         Map<ASTNode, Integer> degreeIn = new HashMap<>();
-        Map<ASTNode, DepNode> nextMap = new HashMap<>();
+        int n = 0;
         for(ASTNode a : smallMap.keySet()) {
             degreeIn.put(a, 0);
         }
         for(ASTNode a : smallMap.keySet()){
+            if(localFlagMap.get(a)) continue;
             for(DepNode d : smallMap.get(a).getChild()){
                 int c = degreeIn.get(d.getStmt()) + 1;
                 degreeIn.put(d.getStmt(), c);
             }
         }
         for(ASTNode a : degreeIn.keySet()){
+            if(localFlagMap.get(a)) continue;
             if(degreeIn.get(a) == 0){
                 outputList.add(a);
+                localFlagMap.put(a, true);
+                n++;
             }
-            else nextMap.put(a, smallMap.get(a));
         }
-        if(nextMap.size() > 0)
-            mainSort(nextMap);
+        return n;
     }
 
     public void printOutputList(){
-        PrintMessage.See("Print outputlist after topological sort:");
+        PrintMessage.See("Print outputlist after topological sort: " + outputList.size());
         for(int i = 0;i < outputList.size();i++){
             PrintMessage.See("["+i+"] " + outputList.get(i).getPrettyPrinted().trim());
         }

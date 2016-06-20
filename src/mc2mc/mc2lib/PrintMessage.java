@@ -17,6 +17,10 @@ public class PrintMessage {
         System.err.println("Warning: " + text);
     }
 
+    public static void genCode(String text){
+        See("[gen] " + text);
+    }
+
     public static void See(String text){
         System.out.println(text);
     }

@@ -3,9 +3,7 @@ package mc2mc.mc2lib;
 import ast.ASTNode;
 import mc2mc.analysis.DepNode;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * Tarjan's strongly connected components algorithm
@@ -15,31 +13,33 @@ import java.util.Stack;
  */
 public class TarjanAlgo {
     Map<ASTNode, DepNode> localStmtMap = null;
-    Map<ASTNode, Integer> number = null;
-    Map<ASTNode, Integer> lowerLink = null;
+    Map<ASTNode, Boolean> cycleMap     = null;
+    Map<ASTNode, Integer> number       = null;
+    Map<ASTNode, Integer> lowerLink    = null;
     Stack<ASTNode> localStack = null;
     int label = 0;
-    boolean hasCycle = false;
+    public static boolean debug = false;
 
     public TarjanAlgo(Map<ASTNode, DepNode> stmtMap){
         localStmtMap = stmtMap;
     }
 
-    public boolean solve(){
+    public Map<ASTNode, Boolean> solve(){
         mainAlgo();
-        return hasCycle;
+        return cycleMap;
     }
 
     private void init(){
+        cycleMap = new HashMap<>();
         number = new HashMap<>();
         lowerLink = new HashMap<>();
         for(ASTNode a : localStmtMap.keySet()){
             number.put(a, 0); //set 0;
             lowerLink.put(a, 0);
+            cycleMap.put(a, false);
         }
         label = 0;
         localStack = new Stack<>();
-        hasCycle = false;
     }
 
     private void mainAlgo(){
@@ -69,16 +69,24 @@ public class TarjanAlgo {
             }
         }
         if(lowerLink.get(a) == number.get(a)){
-            int cnt = 0;
+            List<ASTNode> queue = new LinkedList<>();
             ASTNode w;
-//            PrintMessage.See("[before] size = " + localStack.size());
-//            do{
-//                w = localStack.pop();
-//                PrintMessage.See(": " + w.getPrettyPrinted().trim());
-//            }while (!w.equals(a));
-            while(!localStack.pop().equals(a)) cnt++; // add pop() to current strongly connected component
+            if(debug)
+                PrintMessage.See("[before] size = " + localStack.size());
+            do{
+                w = localStack.pop();
+                queue.add(w);
+                if(debug)
+                    PrintMessage.See(": " + w.getPrettyPrinted().trim());
+            }while (!w.equals(a));
+//             skip cnt == 1, single node is not in a cycle
+            if(queue.size() > 1){
+                for(ASTNode q : queue){
+                    cycleMap.put(q, true);
+                }
+            }
+//            while(!localStack.pop().equals(a)) cnt++; // add pop() to current strongly connected component
 //            PrintMessage.See("[after] size = " + localStack.size());
-            if(cnt>0) hasCycle = true;
         }
     }
 

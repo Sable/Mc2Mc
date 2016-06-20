@@ -108,9 +108,9 @@ public class CommonFunction {
     public static int decideStmt(ASTNode node){
         if(node instanceof TIRCallStmt){
             String op = ((TIRCallStmt) node).getFunctionName().getID();
-            if(isBuiltIn(op)) return 1; //BIF
-            else if(funcNameList.contains(op)) return 2; //UDF
-            return 3;
+            if(funcNameList.contains(op)) return 2; //UDF
+            else if(isBuiltIn(op)) return 1; //BIF
+            return 3; //not-handled functions
         }
         return -1;
     }

@@ -2,10 +2,13 @@ package mc2mc.analysis;
 
 import ast.*;
 import mc2mc.mc2lib.PrintMessage;
+import mc2mc.mc2lib.TarjanAlgo;
+import mc2mc.mc2lib.TopologicalSort;
 import natlab.tame.tamerplus.analysis.AnalysisEngine;
 import natlab.tame.tir.*;
 
 import java.util.*;
+import java.util.List;
 
 /**
  *
@@ -20,6 +23,7 @@ public class TirAnalysisDep {
     boolean isCollect = true;
     Map<ASTNode, DepNode> stmtMap = null;
     Map<ASTNode, Boolean> stmtBool= null;
+    public static boolean debug = false;
 
     public TirAnalysisDep(AnalysisEngine engine, ASTNode node){
         PrintMessage.delimiter();
@@ -39,7 +43,17 @@ public class TirAnalysisDep {
         astNodeTraversal(root);
         isCollect = false;
         astNodeTraversal(root);
-        printStmtMap();
+        //printStmtMap();
+        // solve the graph by the Tarjan's algorithm
+        TarjanAlgo tAlgo = new TarjanAlgo(stmtMap);
+        Map<ASTNode, Boolean> cycleMap = tAlgo.solve();
+
+        TopologicalSort ts = new TopologicalSort(stmtMap, cycleMap);
+        List<ASTNode> outputList = ts.sort();
+
+        if(outputList.size() != stmtMap.size()){
+            PrintMessage.See("At least a cycle is found in dependence graph.");
+        }
     }
 
     public void astNodeTraversal(ASTNode node) {
@@ -93,15 +107,18 @@ public class TirAnalysisDep {
                     PrintMessage.See("[null node] " + node.getPrettyPrinted().trim());
                 }
                 else {
-                    for (TIRNode t : useSet.get(lhsName)) {
-                        DepNode child = stmtMap.get(t);
-                        int kind = !stmtBool.get(t) ? 1 : t.equals(node) ? 0 : 2;
-                        stmtMap.get(node).setChild(child, kind); //forward or anti
-                        /*
-                        * exception
-                        * a = ...
-                        * . = a(i);
-                        */
+                    Set<TIRNode> uses = getOneUses(useSet, lhsName);
+                    if(uses!=null) {
+                        for (TIRNode t : uses) {
+                            DepNode child = stmtMap.get(t);
+                            int kind = !stmtBool.get(t) ? 1 : t.equals(node) ? 0: 2;
+                            stmtMap.get(node).setChild(child, kind); //forward or anti
+                            /*
+                            * exception
+                            * a = ...
+                            * . = a(i);
+                            */
+                        }
                     }
                 }
             }
@@ -112,7 +129,7 @@ public class TirAnalysisDep {
                 for(String var : useSet.keySet()){
                     if(var.equals(lhsName)){
                         for(TIRNode t : useSet.get(var)){
-                            if(t instanceof TIRArrayGetStmt) {
+                            if(t instanceof TIRArrayGetStmt) { // e.g. a(i) = t0;
                                 if(((TIRArrayGetStmt) t).getArrayName().getID().equals(lhsName)){
                                     boolean before = stmtBool.get(t);
                                     PrintMessage.See("[related] " + before + " - " + ((ASTNode)t).getPrettyPrinted().trim());
@@ -120,9 +137,14 @@ public class TirAnalysisDep {
                                             processArrayIndexing((ParameterizedExpr)((TIRArrayGetStmt)t).getRHS(), localUDMap.get(t), iterator);
                                     if(defList.size()==useList.size()){
                                         boolean isDep = true;
+                                        NumValue[] nv1 = null;
+                                        NumValue[] nv2 = null;
                                         for(int k = 0; k<defList.size();k+=2) {
                                             NumValue[] d2 = {defList.get(k), defList.get(k+1)};
                                             NumValue[] u2 = {useList.get(k), useList.get(k+1)};
+                                            // maybe not that simple
+                                            nv1 = d2;
+                                            nv2 = u2;
                                             if(d2[0].isN() && d2[1].isN() && u2[0].isN() && u2[1].isN()){
                                                 // do GCD test
                                                 // if safe --> independent
@@ -139,6 +161,58 @@ public class TirAnalysisDep {
                                         }
                                         if(isDep){
                                             // todo: find out what kind of relationship
+                                            int status = 0; // 0: no idea; 1: greater; 2: less; 3: equal
+                                            if(nv1[0].isN() && nv2[0].isN()){
+                                                int na = nv1[0].getN() - nv2[0].getN();
+                                                if(nv1[1].isN() && nv2[1].isN()){
+                                                    int nb = nv1[1].getN() - nv2[1].getN();
+                                                    status = determineStatus(na, nb);
+                                                }
+                                                else if(nv1[1].isS() && nv2[1].isN()){
+                                                    if(nv1[1].getS().equals(nv2[1].getS())) {
+                                                        status = determineStatus(na, 0);
+                                                    }
+                                                }
+                                            }
+                                            else if(nv1[0].isS() && nv2[0].isS()){
+                                                if(nv1[0].getS().equals(nv2[0].getS())){
+                                                    if(nv1[1].isN() && nv2[1].isN()){
+                                                        int nb = nv1[1].getN() - nv2[1].getN();
+                                                        status = determineStatus(0, nb);
+                                                    }
+                                                    else if(nv1[1].isS() && nv2[1].isN()){
+                                                        if(nv1[1].getS().equals(nv2[1].getS())) {
+                                                            status = determineStatus(0, 0);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            DepNode depDef= stmtMap.get(node);
+                                            DepNode depUse = stmtMap.get(t);
+                                            int kind = 0;
+                                            if(status == 0){
+                                                kind = 1; //flow
+                                                depDef.setChild(depUse,kind); //cyclic
+                                                depUse.setChild(depDef,kind);
+                                            }
+                                            else if(status == 3){
+                                                if(before){
+                                                    kind = 2;
+                                                    depUse.setChild(depDef, kind); //anti
+                                                }
+                                                else{
+                                                    kind = 1;
+                                                    depDef.setChild(depUse, kind); //forward
+                                                }
+                                            }
+                                            else if(status == 1){
+                                                kind = 1;
+                                                depDef.setChild(depUse, kind); //fowrard
+                                            }
+                                            else if(status == 2){
+                                                kind = 2;
+                                                depUse.setChild(depDef, kind); //anti
+                                            }
                                         }
                                         PrintMessage.See("isDep " + isDep);
                                     }
@@ -149,6 +223,20 @@ public class TirAnalysisDep {
                 }
             }
         }
+    }
+
+    private int determineStatus(int na, int nb){
+        int status = 0;
+        if(na == 0) {
+            status = nb == 0 ? 3 : nb > 0 ? 1 : 2;
+        }
+        else if(na > 0) {
+            status = nb >= 0 ? 1 : 0;
+        }
+        else {
+            status = nb <= 0 ? 2 : 0;
+        }
+        return status;
     }
 
     private Set<Expr> collectWrite(Expr lhs){
@@ -260,7 +348,7 @@ public class TirAnalysisDep {
                     saveValue(defSet, arg2, iter, nv);
                 }
             }
-            else if(op.equals("multiply") || op.equals("mtimes")){ // mtimes or multiply
+            else if(op.equals("times") || op.equals("mtimes")){ // times or mtimes
                 String arg1 = ((TIRCallStmt) prev).getArguments().getName(0).getID();
                 String arg2 = ((TIRCallStmt) prev).getArguments().getName(1).getID();
                 if(arg1.equals(iter)){
@@ -313,6 +401,12 @@ public class TirAnalysisDep {
         }
     }
 
+    /**
+     * Get one def from the given var,
+     *   if the one is defined only once whithin block,
+     *     return the stmt defines the var.
+     *   otw, return null.
+     */
     private ASTNode getOneNode(Map<String, Set<TIRNode>> defSet, String var){
         Set<TIRNode> defs = defSet.get(var);
         ASTNode one = null;
@@ -323,6 +417,23 @@ public class TirAnalysisDep {
                 one = null;
         }
         return one;
+    }
+
+    /**
+     * Get the uses of the given var,
+     *   if the uses are within block,
+     *     return the stmt which uses the var.
+     *   otw, return null.
+     */
+    private Set<TIRNode> getOneUses(HashMap<String, HashSet<TIRNode>> useSet, String var){
+        HashSet<TIRNode> uses = useSet.get(var);
+        boolean isAll = true;
+        for(TIRNode u : uses){
+            if(!stmtMap.containsKey(u)){
+                return null;
+            }
+        }
+        return uses;
     }
 
     public int myGCD(int a, int b){
