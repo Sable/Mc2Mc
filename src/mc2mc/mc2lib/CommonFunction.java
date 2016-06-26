@@ -66,6 +66,10 @@ public class CommonFunction {
         }
     }
 
+    public static boolean isBuildinOrUDF(String name){
+        return (funcNameList.contains(name) || isBuiltIn(name));
+    }
+
     public static Set<String> VarNameOnly(Set<String> inputSet){
         Set<String> rtn = new HashSet<>();
         for(String s : inputSet){

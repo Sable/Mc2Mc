@@ -50,7 +50,7 @@ public class TirAnalysis {
     }
 
     /*
-    * Experimental function (deletable)
+     * Experimental function (deletable)
      */
     public void TestTirFunction(){
         if(localAnalysis == null)
@@ -73,8 +73,10 @@ public class TirAnalysis {
         System.out.println(localAnalysis.toString());
     }
 
-    public void RunLoopInvariant(){
-        int op = 2;
+//    public void RunLoopInvariant(){
+    public void runAnalysis(){
+        int op = 3;
+        boolean printFunc = false;
 
         // Add all function names
         for(StaticFunction f : localAnalysis.getFunctionCollection().getAllFunctions()){
@@ -87,8 +89,10 @@ public class TirAnalysis {
                     localAnalysis.getNodeList().get(i).getAnalysis();
             TIRFunction tirfunc = funcanalysis.getTree();
 
-            PrintMessage.See(tirfunc.getPrettyPrinted());
-            PrintMessage.See(funcanalysis.getResult().toString());
+            if(printFunc) {
+                PrintMessage.See(tirfunc.getPrettyPrinted());
+                PrintMessage.See(funcanalysis.getResult().toString());
+            }
             AnalysisEngine engine = AnalysisEngine.forAST(tirfunc);
             constructLoopInvariant(engine.getReachingDefinitionsAnalysis());
 
@@ -126,10 +130,27 @@ public class TirAnalysis {
                 tirfunc.analyze(new TirAnalysisSubExprPrint(tirsub));
             }
             else if(op == 2){
-                PrintMessage.See("** Run data dependence analysis **");
+                PrintMessage.See("** Run loop analysis **", tirfunc.getName().getID());
                 TirAnalysisLoop tirLoop = new TirAnalysisLoop(engine, funcValueMap);
                 tirfunc.analyze(tirLoop);
-                tirLoop.printRWSet();
+//                tirLoop.printRWSet();
+            }
+            else if(op == 3){
+                PrintMessage.See("** Run COE and PAE **", tirfunc.getName().getID());
+                TirAnalysisTrim tirTrim = new TirAnalysisTrim(engine);
+                tirfunc.analyze(tirTrim);
+                tirTrim.printSets();
+            }
+        }
+
+        if(op == 100) {
+            PrintMessage.delimiter();
+            PrintMessage.See("%After Tamer plus");
+            for (StaticFunction f : localAnalysis.getFunctionCollection().getAllFunctions()) {
+                PrintMessage.See(TransformationEngine.forAST(f.getAst())
+                        .getTIRToMcSAFIRWithoutTemp()
+                        .getTransformedTree()
+                        .getPrettyPrinted());
             }
         }
 
@@ -142,7 +163,7 @@ public class TirAnalysis {
             }
             else if(visitedStmt instanceof TIRForStmt){
                 TIRForStmt tfor = (TIRForStmt)visitedStmt;
-                PrintTirStmts(tfor.getStatements());
+//                PrintTirStmts(tfor.getStatements());
                 //PrintMessage.See(tfor.getPrettyPrinted());
                 //PrintNodeSet(rds.getReachingDefinitionsForNode(visitedStmt));
             }

@@ -3,7 +3,6 @@ package mc2mc.mc2lib;
 import ast.ASTNode;
 import natlab.tame.tir.*;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,8 +42,8 @@ public class PrintMessage {
         }
     }
     
-    public static void arrayList(List<String> x){
-        System.out.println("length = " + x.size());
+    public static void arrayList(String[] x){
+        System.out.println("length = " + x.length);
         int c = 0;
         for(String x0 : x) {
             System.out.println("[" + c + "] " + x0);
@@ -52,7 +51,7 @@ public class PrintMessage {
         }
 
     }
-    public static void arrayList(List<String> x, String text){
+    public static void arrayList(String[] x, String text){
         System.out.println(text);
         arrayList(x);
         delimiter();
@@ -78,6 +77,18 @@ public class PrintMessage {
                 //TIRStmt s = (TIRStmt)t;
                 System.out.println("- " + ((ASTNode)t).getPrettyPrinted());
             }
+        }
+    }
+
+    public static void printTirNodeSet(Set<TIRNode> input, String word){
+        See(word);
+        printTirNodeSet(input);
+    }
+    public static void printTirNodeSet(Set<TIRNode> input){
+        int i = 0;
+        for(TIRNode t : input){
+            See("[" + i + "] " + ((ASTNode)t).getPrettyPrinted().trim());
+            i++;
         }
     }
 

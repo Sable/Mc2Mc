@@ -55,6 +55,11 @@ public class PromotedShape {
         setOldShape(p1.getOldShape());
     }
 
+    public void setP(PromotedShape p1){
+        shape = shapeP;
+        // more Range
+    }
+
     public void setT(){
         shape = shapeT;
     }

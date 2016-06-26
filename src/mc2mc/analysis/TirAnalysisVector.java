@@ -50,6 +50,10 @@ public class TirAnalysisVector extends TIRAbstractSimpleStructuralForwardAnalysi
         localValueMap = fValueMap.get(tree);
         localUDMap = engine.getUDChainAnalysis().getChain();
         localRDef = engine.getReachingDefinitionsAnalysis();
+        localDUMap = engine.getDUChainAnalysis().getChain();
+        ifLock = false;
+        ifPBranch = false;
+        ifCondPS = null;
     }
 
     private boolean isFunction = false;
@@ -59,14 +63,20 @@ public class TirAnalysisVector extends TIRAbstractSimpleStructuralForwardAnalysi
     private AnalysisEngine localEngine = null;
     public Map<TIRNode, Map<String, Set<TIRNode>>> localUDMap = null;
     public ReachingDefinitions localRDef = null;
+    public Map<TIRNode, HashMap<String, HashSet<TIRNode>>> localDUMap = null;
+    private boolean ifLock = false;
+    private boolean ifPBranch = false;
+    private PromotedShape ifCondPS = null;
+
+    public boolean oldDebug = false; //old debug stmts, turn off
 
     @Override
     public Map<String, PromotedShape> merge(Map<String, PromotedShape> p1, Map<String, PromotedShape> p2) {
         Map<String, PromotedShape> res = new HashMap<>(p1);
-        PrintMessage.See(" what are you doing? " + isFunction);
-        for(String name : p2.keySet()){
-            if(p1.containsKey(name)){
-                if(!p1.get(name).equals(p2.get(name))){
+        PrintMessage.See(" In function? " + (isFunction ? "no" : "yes"));
+        for (String name : p2.keySet()) {
+            if (p1.containsKey(name)) {
+                if (!p1.get(name).equals(p2.get(name))) {
                     PromotedShape p = p1.get(name);
                     p.setT();
                     res.put(name, p);
@@ -117,16 +127,59 @@ public class TirAnalysisVector extends TIRAbstractSimpleStructuralForwardAnalysi
     }
 
     @Override
+    public void caseTIRAssignLiteralStmt(TIRAssignLiteralStmt node){
+        saveNode(node);
+    }
+
+    @Override
     public void caseTIRIfStmt(TIRIfStmt node){
         // 1-level if-conversion
 //        String cond = node.getConditionVarName().getID();
 //        if(currentOutSet.get(cond).isP())
 //            ifConversion(node);
+        boolean localLock = false;
+        if(isFunction){
+            String cond = node.getConditionVarName().getID(); //get condition name
+            if(!ifPBranch && isPSS(cond)){
+                localLock = true;
+                ifPBranch = true;
+                ifCondPS = getPSbyName(cond);
+            }
+            else if(ifPBranch){
+                PromotedShape currentIfCondPS = getPSbyName(cond);
+                if(currentIfCondPS.isS() || currentIfCondPS.equals(ifCondPS)){
+                    ; // do nothing
+                }
+                else {
+                    ifCondPS.setT();
+                }
+            }
+        }
         currentOutSet = copy(currentInSet);
         associateInSet(node, getCurrentInSet());
 //        caseASTNode(node); // doesn't work (no merge)
         caseIfStmt(node); // merge as expected
         associateOutSet(node, getCurrentOutSet());
+        if(localLock) {
+            ifPBranch = false;
+            ifCondPS = null;
+        }
+    }
+
+    private void updateIfStmts(ASTNode node){
+        Set<String> lhsNames = getLHSName(node);
+        for(String n : lhsNames){
+            PromotedShape p1 = getPSbyName(n);
+            if(p1.isS()){
+                p1.setP(ifCondPS);
+            }
+            else if(p1.equals(ifCondPS)){
+                ; // do nothing
+            }
+            else {
+                p1.setT();
+            }
+        }
     }
 
     public void saveNode(ASTNode node){
@@ -135,7 +188,13 @@ public class TirAnalysisVector extends TIRAbstractSimpleStructuralForwardAnalysi
 //        initStmt(node);
 //        propShape(node);
         colorVariable(node);
-        processBasicStmt(node);
+        if(processBasicStmt(node)){
+            if(ifPBranch)
+                updateIfStmts(node);
+        }
+        else{
+            PrintMessage.Warning("Fail in processBasicStmt - check [TirAnalysisVector]");
+        }
         associateInSet(node, getCurrentInSet());
         associateOutSet(node, getCurrentOutSet());
     }
@@ -145,9 +204,6 @@ public class TirAnalysisVector extends TIRAbstractSimpleStructuralForwardAnalysi
         Set<String> names = getAllName(stmt);
         for(String n : names){
 //            PrintMessage.See("name " + n);
-            if(n.equals("mc_t13")){
-                int xx = 10;
-            }
             if(!currentOutSet.containsKey(n)) {
                 PromotedShape ps = new PromotedShape();
                 if(!isFunction && n.equals(iter)){
@@ -189,7 +245,7 @@ public class TirAnalysisVector extends TIRAbstractSimpleStructuralForwardAnalysi
                         // binary eBIF
                         PromotedShape p1 = currentOutSet.get(args.getName(0).getID());
                         PromotedShape p2 = currentOutSet.get(args.getName(1).getID());
-                        if(isFunction){
+                        if(isFunction && oldDebug){
                             PrintMessage.See(stmt.getPrettyPrinted());
                             PrintMessage.See("0 arg " + args.getName(0).getID());
                             PrintMessage.See("1 arg " + args.getName(1).getID());
@@ -199,18 +255,22 @@ public class TirAnalysisVector extends TIRAbstractSimpleStructuralForwardAnalysi
                 }
                 else if(tag == 2){
                     // UDF analysis
-                    PrintMessage.See("Entering UDF analysis");
+                    boolean printFuncIR = false;
                     IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> calledAnalysis
                             = CommonFunction.getFunction(op);
                     TIRFunction tirFunc = calledAnalysis.getTree();
                     AnalysisEngine engine = AnalysisEngine.forAST(tirFunc);
-                    PrintMessage.See(tirFunc.getPrettyPrinted());
+                    PrintMessage.delimiter();
+                    PrintMessage.See("Entering UDF analysis", tirFunc.getName().getID());
+                    PrintMessage.delimiter();
+                    if(printFuncIR)
+                        PrintMessage.See(tirFunc.getPrettyPrinted());
                     TirAnalysisVector tirUDF = new TirAnalysisVector(tirFunc,
                             CommonFunction.getValueAnalysis(tirFunc),
                             getInputShape(args),
                             engine);
                     tirUDF.analyze();
-                    tirUDF.printResult();
+//                    tirUDF.printResult(); //print all outflow information
                     tirUDF.convertIfStmt(); //
                     // maybe interprocedural analysis?
                     if(tirUDF.decideUDF()){
@@ -276,12 +336,16 @@ public class TirAnalysisVector extends TIRAbstractSimpleStructuralForwardAnalysi
         for(Expr n : arrayList){
             if(n instanceof NameExpr) { // other: ast.ColonExpr
                 String name = ((NameExpr) n).getVarName();
-                if (currentOutSet.containsKey(name)) {
-                    if (currentOutSet.get(name).isP()) {
-                        count++;
-                        pos = c;
-                    }
+                if(isPSP(name)){
+                    count++;
+                    pos = c;
                 }
+//                if (currentOutSet.containsKey(name)) {
+//                    if (currentOutSet.get(name).isP()) {
+//                        count++;
+//                        pos = c;
+//                    }
+//                }
             }
             c++;
         }
@@ -300,16 +364,29 @@ public class TirAnalysisVector extends TIRAbstractSimpleStructuralForwardAnalysi
     }
 
     private Set<String> getAllName(ASTNode node){
+        Set<String> res = new HashSet<>();
+        if(node instanceof AssignStmt){
+            res.addAll(getAllName(((AssignStmt) node).getLHS(), false));
+            res.addAll(getAllName(((AssignStmt) node).getRHS(), true));
+        }
+        else
+            res.addAll(getAllName(node, true));
+        return res;
+    }
+
+    private Set<String> getAllName(ASTNode node, boolean check){
         int len = node.getNumChild();
         Set<String> res = new HashSet<>();
         if(node instanceof ast.Name){
             String str = ((Name) node).getID();
-            if(!CommonFunction.isBuiltIn(str))
+            if(check && !CommonFunction.isBuildinOrUDF(str)) //RHS or all expr
+                res.add(str);
+            else if(!check) // LHS
                 res.add(str);
         }
         else {
             for (int i = 0; i < len; i++) {
-                res.addAll(getAllName(node.getChild(i)));
+                res.addAll(getAllName(node.getChild(i), check));
             }
         }
         return res;
@@ -379,6 +456,20 @@ public class TirAnalysisVector extends TIRAbstractSimpleStructuralForwardAnalysi
         return res;
     }
 
+    public PromotedShape getPSbyName(String name){
+        return currentOutSet.get(name);
+    }
+
+    public boolean isPSS(String name){
+        PromotedShape p1 = getPSbyName(name);
+        return (p1==null?false:p1.isS());
+    }
+
+    public boolean isPSP(String name){
+        PromotedShape p1 = getPSbyName(name);
+        return (p1==null?false:p1.isP());
+    }
+
     private void printList(ast.List<Name> x, String w){
         PrintMessage.See(w);
         printList(x);
@@ -394,7 +485,11 @@ public class TirAnalysisVector extends TIRAbstractSimpleStructuralForwardAnalysi
         convertIfStmt(fnode);
     }
 
+    ast.List ifThenList = null;
+    ast.List ifElseList = null; // do it later
     public void convertIfStmt(ASTNode node){
+        ifThenList = new ast.List();
+        ifElseList = new ast.List();
         int len = node.getNumChild();
         for(int i=0;i<len;i++){
             ASTNode currentNode = node.getChild(i);
@@ -405,16 +500,20 @@ public class TirAnalysisVector extends TIRAbstractSimpleStructuralForwardAnalysi
         }
     }
 
-    private void ifConversion(TIRIfStmt node, boolean f){
+    private boolean ifConversion(TIRIfStmt node, boolean f){
+        PrintMessage.See(node.getConditionVarName().getID(), "if conv name");
+        PrintMessage.See(outFlowSets.get(node).get(node.getConditionVarName().getID()).isP()?"true":"false");
         if(f==true || outFlowSets.get(node).get(node.getConditionVarName().getID()).isP()){
             nextIfStmt(node.getIfStatements()  , true);
             nextIfStmt(node.getElseStatements(), true);
-            doIfConversion(node);
+//            doIfConversion(node);
+            return doIfConversion2(node);
         }
         else {
             nextIfStmt(node.getIfStatements()  , f);
             nextIfStmt(node.getElseStatements(), f);
         }
+        return false;
     }
 
     public void nextIfStmt(ASTNode node, boolean f){
@@ -426,6 +525,134 @@ public class TirAnalysisVector extends TIRAbstractSimpleStructuralForwardAnalysi
         }
     }
 
+    ////// if conversion v2
+    private boolean doIfConversion2(TIRIfStmt node){
+        Map<String, String> mapThen = new HashMap<>();
+        Map<String, String> mapElse = new HashMap<>();
+        String thenCond = node.getConditionVarName().getID();
+        Map<ASTNode, Boolean> blockThen = mapIfBlock(node.getIfStatements());
+        Map<ASTNode, Boolean> blockElse = mapIfBlock(node.getElseStatements());
+        PrintMessage.delimiter();
+        PrintMessage.See("Print if conversion", "AnalysisVector");
+        gen("thenCond", thenCond);
+        gen("elseCond", "not(thenCond)");
+        for(Stmt s : node.getIfStatements()){
+            if(s instanceof AssignStmt){
+                Set<String> lhsName = getLHSName(s);
+                if(lhsName.size() != 1){
+                    PrintMessage.Warning("Left hand side variable in the IF block must be 1.");
+                    return false;
+                }
+                String lhs = lhsName.iterator().next(); // lhs name0
+                if(isTempLike(lhs,s, blockThen)){
+                    String t0 = genTemp();
+                    gen(t0, genRHS(s));
+                    gen(lhs, "times(thenCond, " + t0 + ")");
+                }
+                else {
+                    String t1 = genTemp();
+                    String t2 = genTemp();
+                    gen(t1, genRHS(s));
+                    gen(t2, "times(thenCond, " + t1 + ")");
+                    mapThen.put(lhs, t2);
+                }
+            }
+            else return  false;
+        }
+        if(node.hasElseBlock()){
+            for(Stmt s : node.getElseStatements()){
+                if(s instanceof AssignStmt){
+                    Set<String> lhsName = getLHSName(s);
+                    if(lhsName.size() != 1){
+                        PrintMessage.Warning("Left hand side variable in the ELSE block must be 1.");
+                        return false;
+                    }
+                    String lhs = lhsName.iterator().next(); // lhs name0
+                    if(isTempLike(lhs,s,blockElse)){
+                        String t3 = genTemp();
+                        gen(t3, genRHS(s));
+                        gen(lhs, "times(elseCond, " + t3 + ")");
+                    }
+                    else if(mapThen.containsKey(lhs)){
+                        String t4 = genTemp();
+                        String t5 = genTemp();
+                        gen(t4, genRHS(s));
+                        gen(t5, "times(elseCond, " + t4 + ")");
+                        gen(lhs, t5 + " + " + mapThen.get(lhs));
+                        mapThen.remove(lhs);
+                    }
+                    else {
+                        String t6 = genTemp();
+                        String t7 = genTemp();
+                        gen(t6, genRHS(s));
+                        gen(t7, "times(elseCond, " + t6 + ")");
+                        mapElse.put(lhs, t7);
+                    }
+                }
+                else return  false;
+            }
+        }
+        if(mapThen.size() > 0){
+            for(String n : mapThen.keySet()){
+                String t8 = genTemp();
+                gen(t8, "times(" + n + ", elseCond)");
+                gen(n, t8 + " + " + mapThen.get(n));
+            }
+        }
+        if(mapElse.size() > 0){
+            for(String n : mapElse.keySet()){
+                String t9 = genTemp();
+                gen(t9, "times(" + n + ", thenCond)");
+                gen(n, t9 + " + " + mapElse.get(n));
+            }
+        }
+        return true;
+    }
+
+    private Map<ASTNode, Boolean> mapIfBlock(TIRStatementList body){
+        Map<ASTNode, Boolean> rtn = new HashMap<>();
+        for(Stmt s : body){
+            rtn.put(s, true);
+        }
+        return rtn;
+    }
+
+    private boolean isTempLike(String varName, ASTNode varNode, Map<ASTNode, Boolean> block){
+        if(localDUMap.get(varNode)==null){
+            return true;
+        }
+        HashSet<TIRNode> defs = localDUMap.get(varNode).get(varName);
+        for(TIRNode t : defs){
+            if(!block.containsKey(t)) return false;
+        }
+        return true;
+    }
+
+    private int tempIndex = 0;
+    private String genTemp(){
+        return "new_t"+tempIndex++;
+    }
+
+    private String genRHS(ASTNode node){
+        String rtn = "";
+        if(node instanceof AssignStmt)
+            rtn = ((AssignStmt) node).getRHS().getPrettyPrinted();
+        if(node instanceof TIRCallStmt){
+            String op = ((TIRCallStmt) node).getFunctionName().getID();
+            if(op.equals("mtimes")){
+                if(isScalar(((TIRCallStmt) node).getArguments().getName(0).getID())
+                || isScalar(((TIRCallStmt) node).getArguments().getName(1).getID()))
+                    rtn = rtn.replace("mtimes", "times"); //update
+            }
+        }
+        return rtn;
+    }
+
+    private void gen(String lhs, String rhs){
+        PrintMessage.See(lhs.trim() + " = " + rhs.trim() + ";");
+    }
+
+    ////// if conversion v1
     private void doIfConversion(TIRIfStmt node){
         List<ASTNode> thenAssignStmt = collectAssign(node.getIfStatements());
         List<ASTNode> elseAssignStmt = new ArrayList<>();
@@ -580,6 +807,8 @@ public class TirAnalysisVector extends TIRAbstractSimpleStructuralForwardAnalysi
         }
         return rtn;
     }
+
+    ////// if conversion v1
 
 
     /*

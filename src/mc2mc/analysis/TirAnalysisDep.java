@@ -131,6 +131,8 @@ public class TirAnalysisDep {
                         for(TIRNode t : useSet.get(var)){
                             if(t instanceof TIRArrayGetStmt) { // e.g. a(i) = t0;
                                 if(((TIRArrayGetStmt) t).getArrayName().getID().equals(lhsName)){
+                                    if(!stmtBool.containsKey(t))
+                                        continue; // if not in the current loop, skip
                                     boolean before = stmtBool.get(t);
                                     PrintMessage.See("[related] " + before + " - " + ((ASTNode)t).getPrettyPrinted().trim());
                                     ArrayList<NumValue> useList =
@@ -296,6 +298,9 @@ public class TirAnalysisDep {
                     nv[0].setS(indexName);
                 }
             }
+        }
+        else if(node instanceof ColonExpr){
+            nv[0].setS(node.getPrettyPrinted().trim());
         }
         return nv;
     }

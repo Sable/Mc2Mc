@@ -132,7 +132,7 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
                 // whole analysis
                 TirAnalysisVector tirVector = new TirAnalysisVector(node, fValueMap);
                 tirVector.analyze();
-                PrintMessage.See("Starting print flow information");
+                PrintMessage.See("Starting print flow information", "AnalysisLoop");
                 node.analyze(new TirAnalysisLoopPrint(tirVector));
             }
             else {

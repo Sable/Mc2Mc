@@ -20,13 +20,14 @@ public class Mc2McTranslator {
         JCommander jcommander = new JCommander(options, args);
         jcommander.setProgramName("Mc2Mc");
 
-        PrintMessage.arrayList(options.arguments, "Option information");
+        String[] parameters = options.arguments.split(" ");
+        PrintMessage.arrayList(parameters, "Option information");
 
         runOptions(options, jcommander);
 
-        int argSize =options.arguments.size();
-        String[] parameters = options.arguments.subList(1,argSize).toArray(new String[0]);
-        String mainFile = options.arguments.get(0);
+//        int argSize =args.length;
+//        String[] parameters = options.arguments.subList(1,argSize).toArray(new String[0]);
+        String mainFile = options.inputArgs.get(0);
         TirAnalysis tira = new TirAnalysis(mainFile, parameters);
         //tira.TestTirFunction();
         //tira.TirValueAnalysis();
@@ -36,7 +37,7 @@ public class Mc2McTranslator {
             tira.RunTamerViewer();
         }
         else {
-            tira.RunLoopInvariant();
+            tira.runAnalysis();
         }
     }
 
@@ -46,11 +47,11 @@ public class Mc2McTranslator {
             System.exit(0);
         }
 
-        if(opt.isOptDisplay){
-            PrintMessage.See("Optimization options:\n\n" +
-                    "1) If conversion\n" +
-                    "2) Function vectorization");
-            System.exit(0);
-        }
+//        if(opt.isOptDisplay){
+//            PrintMessage.See("Optimization options:\n\n" +
+//                    "1) If conversion\n" +
+//                    "2) Function vectorization");
+//            System.exit(0);
+//        }
     }
 }

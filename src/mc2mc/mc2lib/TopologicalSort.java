@@ -16,7 +16,7 @@ public class TopologicalSort {
     Map<ASTNode, DepNode> localStmtMap;
     Map<ASTNode, Boolean> localFlagMap;
     List<ASTNode> outputList = null;
-    public static boolean debug = false;
+    public static boolean debug = true;
 
     public TopologicalSort(Map<ASTNode, DepNode> stmtMap, Map<ASTNode, Boolean> cycleMap){
         localStmtMap = stmtMap;
@@ -26,7 +26,7 @@ public class TopologicalSort {
     public List<ASTNode> sort(){
         init();
         if(debug) {
-            PrintMessage.See("localFlagMap:");
+            PrintMessage.See("localFlagMap: from [TopologicalSort]");
             for (ASTNode a : localFlagMap.keySet()) {
                 PrintMessage.See("[" + localFlagMap.get(a) + "] " + a.getPrettyPrinted().trim());
             }
@@ -69,7 +69,7 @@ public class TopologicalSort {
     public void printOutputList(){
         PrintMessage.See("Print outputlist after topological sort: " + outputList.size());
         for(int i = 0;i < outputList.size();i++){
-            PrintMessage.See("["+i+"] " + outputList.get(i).getPrettyPrinted().trim());
+            PrintMessage.See("[" + i + "]" + outputList.get(i).getPrettyPrinted().trim());
         }
     }
 }
