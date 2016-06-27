@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  *
  */
-public class TirAnalysisUDF extends TirAnalysisVector {
+public class TirAnalysisUDF extends TirAnalysisPropagateShape {
 
     private TIRFunction fnode = null;
     private Map<String, PromotedShape>  inputPS = null;

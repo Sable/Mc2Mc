@@ -13,10 +13,10 @@ import java.util.Map;
  */
 public class TirAnalysisLoopPrint extends TIRAbstractNodeCaseHandler {
 
-    private TirAnalysisVector localVector;
+    private TirAnalysisPropagateShape localVector;
     private int count = 0;
 
-    public TirAnalysisLoopPrint(TirAnalysisVector tVector){
+    public TirAnalysisLoopPrint(TirAnalysisPropagateShape tVector){
         localVector = tVector;
         count = 0;
     }

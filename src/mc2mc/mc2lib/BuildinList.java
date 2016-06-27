@@ -82,4 +82,8 @@ public class BuildinList {
         }
         return new PromotedShape(shape);
     }
+
+    public static PromotedShape mergeTwo(PromotedShape p1, PromotedShape p2){
+        return binaryTable(p1, p2);
+    }
 }

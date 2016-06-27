@@ -20,6 +20,8 @@ import natlab.tame.valueanalysis.basicmatrix.BasicMatrixValue;
 import natlab.toolkits.filehandling.GenericFile;
 import natlab.toolkits.path.FileEnvironment;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,6 +36,7 @@ public class TirAnalysis {
     FileEnvironment localEnv;
     SimpleFunctionCollection localCallgraph;
     ValueAnalysis<AggrValue<BasicMatrixValue>> localAnalysis = null;
+    Map<TIRFunction, List<String>> fnHashMap = null;
 
     public TirAnalysis(String file, String[] args){
         inputFile = file;
@@ -47,6 +50,7 @@ public class TirAnalysis {
         localEnv       = new FileEnvironment(localFile);
         localCallgraph = new SimpleFunctionCollection(localEnv); //contains all functions
         localAnalysis  = BasicTamerTool.analyze(shapeDesc, localEnv);
+        fnHashMap      = new HashMap<>();
     }
 
     /*
@@ -74,22 +78,23 @@ public class TirAnalysis {
     }
 
 //    public void RunLoopInvariant(){
-    public void runAnalysis(){
-        int op = 3;
+    public void runAnalysis() {
+        int op = 2;
         boolean printFunc = false;
+        boolean noChange = true;
 
         // Add all function names
-        for(StaticFunction f : localAnalysis.getFunctionCollection().getAllFunctions()){
+        for (StaticFunction f : localAnalysis.getFunctionCollection().getAllFunctions()) {
             CommonFunction.addFuncName(f.getName());
         }
         CommonFunction.setValueAnalysis(localAnalysis);
 
-        for(int i=0;i<localAnalysis.getNodeList().size();i++){
+        for (int i = 0; i < localAnalysis.getNodeList().size(); i++) {
             IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis =
                     localAnalysis.getNodeList().get(i).getAnalysis();
             TIRFunction tirfunc = funcanalysis.getTree();
 
-            if(printFunc) {
+            if (printFunc) {
                 PrintMessage.See(tirfunc.getPrettyPrinted());
                 PrintMessage.See(funcanalysis.getResult().toString());
             }
@@ -112,38 +117,34 @@ public class TirAnalysis {
 //            }
 
 
-            if(op == 0) {
+            if (op == 0) {
                 // Loop invariant
                 PrintMessage.See("Run loop invariant");
                 TirAnalysisLoopInvariant tirloop = new TirAnalysisLoopInvariant(tirfunc, engine);
                 PrintMessage.delimiter();
                 tirloop.run();
                 PrintMessage.delimiter();
-            }
-            else if(op == 1) {
+            } else if (op == 1) {
                 // Available sub-expression
                 PrintMessage.See("** Run available sub-expression **");
                 TirAnalysisSubExpr tirsub = new TirAnalysisSubExpr(tirfunc, engine);
                 tirsub.analyze();
 //                tirsub.getFinalInfo();
-                PrintMessage.See("start tirfun analyze");
+//                PrintMessage.See("start tirfun analyze");
                 tirfunc.analyze(new TirAnalysisSubExprPrint(tirsub));
-            }
-            else if(op == 2){
-                PrintMessage.See("** Run loop analysis **", tirfunc.getName().getID());
+            } else if (op == 2) {
+                PrintMessage.See("** [Phase 1] Run loop analysis **", tirfunc.getName().getID());
                 TirAnalysisLoop tirLoop = new TirAnalysisLoop(engine, funcValueMap);
                 tirfunc.analyze(tirLoop);
 //                tirLoop.printRWSet();
-            }
-            else if(op == 3){
-                PrintMessage.See("** Run COE and PAE **", tirfunc.getName().getID());
+                PrintMessage.See("** [Phase 2] Code generation **", tirfunc.getName().getID());
                 TirAnalysisTrim tirTrim = new TirAnalysisTrim(engine);
                 tirfunc.analyze(tirTrim);
                 tirTrim.printSets();
             }
         }
 
-        if(op == 100) {
+        if (op == 100) {
             PrintMessage.delimiter();
             PrintMessage.See("%After Tamer plus");
             for (StaticFunction f : localAnalysis.getFunctionCollection().getAllFunctions()) {

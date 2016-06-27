@@ -8,6 +8,10 @@ import natlab.tame.tir.analysis.TIRAbstractNodeCaseHandler;
 
 /**
  * Code generator
+ *
+ * consider:
+ *  1) mtimes  -> times
+ *  2) mrdivde -> rdivde
  */
 public class CodeGenerator extends TIRAbstractNodeCaseHandler {
 

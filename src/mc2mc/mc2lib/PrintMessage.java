@@ -3,6 +3,7 @@ package mc2mc.mc2lib;
 import ast.ASTNode;
 import natlab.tame.tir.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,6 +40,15 @@ public class PrintMessage {
         System.out.println("Print a list of strings:");
         for(String x : ones){
             System.out.println("- " + x);
+        }
+    }
+
+    public static void arrayList(List<String> x){
+        int i = 0;
+        delimiter();
+        for(String s : x) {
+            See("[" + i + "] " + s);
+            i++;
         }
     }
     

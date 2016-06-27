@@ -56,6 +56,10 @@ public class TirAnalysisDep {
         }
     }
 
+    public Map<ASTNode, DepNode> getDepGraph(){
+        return stmtMap;
+    }
+
     public void astNodeTraversal(ASTNode node) {
         if(node instanceof AssignStmt){
             if(localDUMap.get(node)!=null) { //e.g. i=1:n in for statement

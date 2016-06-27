@@ -1,8 +1,10 @@
 package mc2mc.analysis;
 
 import ast.*;
+import ast.List;
 import mc2mc.mc2lib.CommonFunction;
 import mc2mc.mc2lib.PrintMessage;
+import mc2mc.mc2lib.TopologicalSort;
 import natlab.tame.tamerplus.analysis.AnalysisEngine;
 import natlab.tame.tir.TIRCommentStmt;
 import natlab.tame.tir.TIRForStmt;
@@ -16,10 +18,7 @@ import natlab.tame.valueanalysis.basicmatrix.BasicMatrixValue;
 import natlab.tame.valueanalysis.components.constant.Constant;
 import natlab.tame.valueanalysis.components.shape.Shape;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 /**
@@ -124,23 +123,54 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
             numberFor += findInnerFor(t);
         }
         int op = 1;
-        if(isFor && numberFor == 1 && interestingLoop(node)){
+        if(isFor && numberFor == 1 && innermostLoop(node)) {
 //            collectRW((TIRForStmt)node);
 //            buildDepGraph((TIRForStmt)node);
 //            processStmt((TIRForStmt) node, fValueMap.get(node));
-            if(op == 1) {
-                // whole analysis
-                TirAnalysisVector tirVector = new TirAnalysisVector(node, fValueMap);
-                tirVector.analyze();
-                PrintMessage.See("Starting print flow information", "AnalysisLoop");
-                node.analyze(new TirAnalysisLoopPrint(tirVector));
-            }
-            else {
-                TirAnalysisDep tirDep = new TirAnalysisDep(localEngine, node);
-                tirDep.run();
-            }
+            PrintMessage.See("Getting outFlow", "AnalysisLoop");
+            TirAnalysisPropagateShape tirPS = new TirAnalysisPropagateShape(node, fValueMap);
+            tirPS.analyze();
+            PrintMessage.See("Getting depGraph", "AnalysisLoop");
+            node.analyze(new TirAnalysisLoopPrint(tirPS));
+            TirAnalysisDep tirDep = new TirAnalysisDep(localEngine, node);
+            tirDep.run();
+            PrintMessage.See("Getting newFor", "AnalysisLoop");
+            Map<ASTNode, Map<String, PromotedShape>> outFlow = tirPS.getOutFlowSets();
+            Map<ASTNode, DepNode> depGraph = tirDep.getDepGraph();
+            java.util.List<String> newFor = vectorFor(node, outFlow, depGraph);
         }
         return numberFor;
+    }
+
+    private java.util.List<String> vectorFor(ASTNode iFor, Map<ASTNode, Map<String, PromotedShape>> outFlow, Map<ASTNode, DepNode> depGraph){
+        TIRForStmt tfor = (TIRForStmt)iFor;
+        String iterator = tfor.getLoopVarName().getID();
+        String colonExpr= tfor.getAssignStmt().getRHS().getPrettyPrinted();
+        java.util.List<ASTNode> loopStmts = new ArrayList<>();
+        TopologicalSort tSort = new TopologicalSort(depGraph);
+        Set<Map<ASTNode, DepNode>> subGraph = tSort.getGroups();
+        for(Map<ASTNode, DepNode> G : subGraph){
+            // check PS
+            boolean hasTop = false;
+            for(ASTNode stmt : tfor.getStatements()){
+                // generate sequential code here
+            }
+            for(ASTNode stmt : G.keySet()){ // G has no order guarantee
+                Map<String, PromotedShape> tempValue = outFlow.get(stmt);
+                for(String s : tempValue.keySet()){
+                    if(tempValue.get(s).isT()) {
+                        hasTop = true;
+                        break;
+                    }
+                }
+                if(hasTop)
+                    break;
+            }
+            if(hasTop){
+                for(ASTNode stmt : G.keySet())
+                    loopStmts.add(stmt);
+            }
+        }
     }
 
     public void addInSet(Set<Expr> x, Expr e){
@@ -280,17 +310,19 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
     // think more
 
     /*
-    Input with an innermost loop, tfor
+     * Input with an innermost loop, ifor
+     *  1) check valid innermostLoop
+     *  2) only assignment and comment statems allowed
+     *  3) Control statements are not allowed (mentioned in the diagram)
      */
-    public boolean interestingLoop(ASTNode tfor){
-        boolean isNestStmt = (tfor instanceof TIRForStmt || tfor instanceof TIRIfStmt);
-        ASTNode newNode = isNestStmt?tfor.getChild(1):tfor;
+    public boolean innermostLoop(ASTNode ifor){
+        boolean isNestStmt = (ifor instanceof TIRForStmt || ifor instanceof TIRIfStmt);
+        ASTNode newNode = isNestStmt?ifor.getChild(1):ifor;
         int len = newNode.getNumChild();
         boolean res = true;
         for(int i=0;i<len;i++){
             ASTNode currentNode = newNode.getChild(i);
             if(currentNode instanceof AssignStmt);
-            else if(currentNode instanceof TIRIfStmt) res = interestingLoop(currentNode); //? check if-structure
             else if(currentNode instanceof TIRCommentStmt); // %comment
             else res = false;
 
