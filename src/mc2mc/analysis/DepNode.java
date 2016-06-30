@@ -37,6 +37,41 @@ public class DepNode {
         return child;
     }
 
+    public List<Integer> getCedge(){
+        return cedge;
+    }
+
+    public boolean isKindFlow(int x){
+        return isKind(x, 1);
+    }
+
+    public boolean isKindAnti(int x){
+        return isKind(x, 2);
+    }
+
+    public boolean isKindOutput(int x){
+        return isKind(x, 3);
+    }
+
+    public boolean isKind(int x, int kind){
+        if(x >= child.size())
+            return false;
+        int value = cedge.get(x);
+        return value == kind;
+    }
+
+    public boolean safeRemoveChild(int x){
+        if(x >= child.size())
+            return false;
+        child.remove(x);
+        cedge.remove(x);
+        return true;
+    }
+
+    public List<DepNode> getParent(){
+        return parent;
+    }
+
     public ASTNode getStmt(){
         return stmt;
     }

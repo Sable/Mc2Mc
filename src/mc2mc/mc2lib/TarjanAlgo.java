@@ -24,6 +24,14 @@ public class TarjanAlgo {
         localStmtMap = stmtMap;
     }
 
+    public boolean hasCycle(){
+        for(ASTNode a : cycleMap.keySet()){
+            if(cycleMap.get(a))
+                return true;
+        }
+        return false;
+    }
+
     public Map<ASTNode, Boolean> solve(){
         mainAlgo();
         return cycleMap;
@@ -41,6 +49,7 @@ public class TarjanAlgo {
         label = 0;
         localStack = new Stack<>();
     }
+
 
     private void mainAlgo(){
         init();
@@ -83,6 +92,13 @@ public class TarjanAlgo {
             if(queue.size() > 1){
                 for(ASTNode q : queue){
                     cycleMap.put(q, true);
+                }
+            }
+            else if(queue.size() == 1){
+                ASTNode one = queue.get(0);
+                List<DepNode> child = localStmtMap.get(one).getChild();
+                if(child.size()==1 && one.equals(child.get(0).getStmt())){
+                    cycleMap.put(one, true);
                 }
             }
 //            while(!localStack.pop().equals(a)) cnt++; // add pop() to current strongly connected component

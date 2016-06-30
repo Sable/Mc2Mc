@@ -162,4 +162,15 @@ public class PrintMessage {
     private static String Tag(String funcName){
         return " : from PrintMessage." + funcName;
     }
+
+    public static void welcomeWords(){
+        int n = 20;
+        delimiter('*', n);
+        See("Welcome to Mc2Mc!\n");
+        See("If you have any questions, please send email to Hanfeng (hchen127@cs.mcgill.ca)");
+        See("");
+        See("Usage:");
+        See("  ./mc2mc path/to/file -arg \"DOUBLE&1*1&REAL\" -out \"newpath/to/file\"");
+        delimiter('*', n);
+    }
 }

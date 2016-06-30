@@ -17,7 +17,7 @@ public class TirAnalysisDep {
     AnalysisEngine localEngine = null;
     Map<TIRNode, Map<String, Set<TIRNode>>> localUDMap = null;
     Map<TIRNode, HashMap<String, HashSet<TIRNode>>> localDUMap = null;
-    ASTNode root = null;
+    TIRForStmt root = null;
     String iterator = "";
     boolean isLoop = false;
     boolean isCollect = true;
@@ -32,7 +32,7 @@ public class TirAnalysisDep {
         localEngine = engine;
         localUDMap = engine.getUDChainAnalysis().getChain();
         localDUMap = engine.getDUChainAnalysis().getChain();
-        root = node;
+        root = (TIRForStmt)node;
         iterator = getIterator(root);
         isLoop = !iterator.isEmpty();
     }
@@ -40,19 +40,21 @@ public class TirAnalysisDep {
     public void run(){
         stmtMap = new HashMap<>();
         stmtBool= new HashMap<>();
-        astNodeTraversal(root);
+        astNodeTraversal(root.getStatements());
         isCollect = false;
-        astNodeTraversal(root);
+        astNodeTraversal(root.getStatements());
         //printStmtMap();
         // solve the graph by the Tarjan's algorithm
-        TarjanAlgo tAlgo = new TarjanAlgo(stmtMap);
-        Map<ASTNode, Boolean> cycleMap = tAlgo.solve();
+        if(debug) {
+            TarjanAlgo tAlgo = new TarjanAlgo(stmtMap);
+            Map<ASTNode, Boolean> cycleMap = tAlgo.solve();
 
-        TopologicalSort ts = new TopologicalSort(stmtMap, cycleMap);
-        List<ASTNode> outputList = ts.sort();
+            TopologicalSort ts = new TopologicalSort(stmtMap, cycleMap);
+            List<ASTNode> outputList = ts.sort();
 
-        if(outputList.size() != stmtMap.size()){
-            PrintMessage.See("At least a cycle is found in dependence graph.");
+            if (outputList.size() != stmtMap.size()) {
+                PrintMessage.See("At least a cycle is found in dependence graph.");
+            }
         }
     }
 
@@ -62,14 +64,14 @@ public class TirAnalysisDep {
 
     public void astNodeTraversal(ASTNode node) {
         if(node instanceof AssignStmt){
-            if(localDUMap.get(node)!=null) { //e.g. i=1:n in for statement
+//            if(localDUMap.get(node)!=null) { //e.g. i=1:n in for statement
                 if (isCollect) {
                     stmtMap.put(node, new DepNode(node));
                     stmtBool.put(node, false);
                 }
                 else
                     processStmt((AssignStmt) node);
-            }
+//            }
         }
         else {
             int len = node.getNumChild();
@@ -103,6 +105,12 @@ public class TirAnalysisDep {
         HashMap<String, HashSet<TIRNode>> useSet = localDUMap.get(node);
 //        if(useSet==null) return; //e.g. i=1:n in for statement
         stmtBool.put(node, true);
+        if(useSet==null) { // no use at all
+            int kind = 3; //output
+            DepNode t = stmtMap.get(node);
+            t.setChild(t, kind);
+            return;
+        }
 
         for(Expr e : allWrite){
             if(e instanceof NameExpr){ // e.g. a
@@ -452,6 +460,7 @@ public class TirAnalysisDep {
 
     public boolean gcdTest(int a1, int b1, int a2, int b2){
         PrintMessage.See(" (" + a1 + "," + b1 + "," + a2 + "," + b2 + ")");
+        if(a1 < 1 || a2 < 1) return true; //avoid it
         return ((b2-b1)%(myGCD(a1,a2))==0);
     }
 

@@ -16,6 +16,9 @@ public class ReadOptions {
     @Parameter(names={"-args"}, description = "list all optimizations")
     public String arguments = ""; // pass program parameters to McLabCore
 
+    @Parameter(names = {"-out"}, description = "output directory")
+    public String outDir = "";
+
 //    @Parameter(names={"-p","--display"}, description = "list all optimizations")
 //    public boolean isOptDisplay = false;
 

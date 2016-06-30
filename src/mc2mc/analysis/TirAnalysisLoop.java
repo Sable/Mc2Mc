@@ -1,7 +1,6 @@
 package mc2mc.analysis;
 
 import ast.*;
-import ast.List;
 import mc2mc.mc2lib.CommonFunction;
 import mc2mc.mc2lib.PrintMessage;
 import mc2mc.mc2lib.TopologicalSort;
@@ -19,6 +18,7 @@ import natlab.tame.valueanalysis.components.constant.Constant;
 import natlab.tame.valueanalysis.components.shape.Shape;
 
 import java.util.*;
+import java.util.List;
 
 
 /**
@@ -32,11 +32,13 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
     private Map<TIRNode, Set<TIRNode>> loopDep = null;
     private Map<ASTNode, ValueFlowMap<AggrValue<BasicMatrixValue>>> fValueMap;
     private AnalysisEngine localEngine = null;
+    private Map<ASTNode, List<String>> stmtHashMap = null; //<TIRForStmt, list<String>>
 
     public TirAnalysisLoop(AnalysisEngine engine, Map<ASTNode, ValueFlowMap<AggrValue<BasicMatrixValue>>> valueMap){
         fUDMap = engine.getUDChainAnalysis().getChain(); //UDChain
         fValueMap = valueMap;
         localEngine = engine;
+        stmtHashMap = new HashMap<>();
     }
 
     @Override
@@ -111,6 +113,10 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
         return rtn;
     }
 
+    public Map<ASTNode, List<String>> getStmtHashMap(){
+        return stmtHashMap;
+    }
+
     /*
      See the example in the folder: in/test_loop.m
     */
@@ -130,47 +136,123 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
             PrintMessage.See("Getting outFlow", "AnalysisLoop");
             TirAnalysisPropagateShape tirPS = new TirAnalysisPropagateShape(node, fValueMap);
             tirPS.analyze();
-            PrintMessage.See("Getting depGraph", "AnalysisLoop");
             node.analyze(new TirAnalysisLoopPrint(tirPS));
+            Map<ASTNode, Map<String, PromotedShape>> outFlow = tirPS.getOutFlowSets();
+            PrintMessage.See("Getting depGraph", "AnalysisLoop");
             TirAnalysisDep tirDep = new TirAnalysisDep(localEngine, node);
             tirDep.run();
             PrintMessage.See("Getting newFor", "AnalysisLoop");
-            Map<ASTNode, Map<String, PromotedShape>> outFlow = tirPS.getOutFlowSets();
             Map<ASTNode, DepNode> depGraph = tirDep.getDepGraph();
-            java.util.List<String> newFor = vectorFor(node, outFlow, depGraph);
+            java.util.List<String> newFor = vectorizeFor(node, outFlow, depGraph);
+            stmtHashMap.put(node, newFor);
         }
         return numberFor;
     }
 
-    private java.util.List<String> vectorFor(ASTNode iFor, Map<ASTNode, Map<String, PromotedShape>> outFlow, Map<ASTNode, DepNode> depGraph){
+    private java.util.List<String> vectorizeFor(ASTNode iFor,
+                                             Map<ASTNode, Map<String, PromotedShape>> outFlow,
+                                             Map<ASTNode, DepNode> depGraph){
         TIRForStmt tfor = (TIRForStmt)iFor;
         String iterator = tfor.getLoopVarName().getID();
         String colonExpr= tfor.getAssignStmt().getRHS().getPrettyPrinted();
         java.util.List<ASTNode> loopStmts = new ArrayList<>();
+//        java.util.List<ASTNode> outStmts  = new ArrayList<>();
+        java.util.List<String>  outString = new ArrayList<>();
+
+        // debug depGraph
+//        for(ASTNode a : depGraph.keySet()){
+//            PrintMessage.See("key: " + a.getPrettyPrinted().trim());
+//            PrintMessage.See(depGraph.get(a).printChild());
+//        }
+
         TopologicalSort tSort = new TopologicalSort(depGraph);
-        Set<Map<ASTNode, DepNode>> subGraph = tSort.getGroups();
-        for(Map<ASTNode, DepNode> G : subGraph){
-            // check PS
-            boolean hasTop = false;
-            for(ASTNode stmt : tfor.getStatements()){
-                // generate sequential code here
-            }
-            for(ASTNode stmt : G.keySet()){ // G has no order guarantee
-                Map<String, PromotedShape> tempValue = outFlow.get(stmt);
-                for(String s : tempValue.keySet()){
-                    if(tempValue.get(s).isT()) {
-                        hasTop = true;
+        Map<ASTNode, Map<ASTNode, DepNode>> node2Map = tSort.getGroups();
+        Map<Map<ASTNode, DepNode>, Boolean> nodeFlag = new HashMap<>();
+        Map<Map<ASTNode, DepNode>, Boolean> hasCyclicMap= tSort.getIsCyclic();
+        java.util.List<String> newFor = new ArrayList<>();
+        Map<ASTNode, String> modifiedMap = new HashMap<>(); //special patterns
+        Set<Map<ASTNode, DepNode>> groupSpecial = new HashSet<>();
+
+        for(ASTNode stmt : tfor.getStatements()){
+            // generate sequential code here
+            if(stmt instanceof TIRCommentStmt) continue;; // block it?
+            Map<ASTNode, DepNode> group = node2Map.get(stmt);
+            if(!nodeFlag.containsKey(group) || nodeFlag.get(group)){
+                boolean notTop = true;
+                Map<String, PromotedShape> allValue = outFlow.get(stmt);
+                for(String s : allValue.keySet()){
+                    if(allValue.get(s).isT()) {
+                        notTop = false;
                         break;
                     }
                 }
-                if(hasTop)
-                    break;
-            }
-            if(hasTop){
-                for(ASTNode stmt : G.keySet())
-                    loopStmts.add(stmt);
+                nodeFlag.put(group, notTop);
+                boolean isAcyclic = hasCyclicMap.get(group);
+                if(!notTop || isAcyclic){
+                    // add all of statements
+                    if(notTop && isAcyclic){
+                        if(!groupSpecial.contains(group))
+                            groupSpecial.add(group);
+                    }
+                    else {
+                        loopStmts.add(stmt);
+                    }
+                }
             }
         }
+        //special group
+        for(Map<ASTNode, DepNode> g : groupSpecial){
+            if(tSort.matchIdiom1(g, null, null)) {
+                java.util.List<String> remainedString = new ArrayList<>();
+                tSort.matchIdiom1(g, modifiedMap, remainedString);
+                addVectorizableGroup(outString, g, modifiedMap);
+                for (String s : remainedString) {
+                    outString.add(s);
+                }
+            }
+        }
+
+        for(Map<ASTNode, DepNode> group : hasCyclicMap.keySet()){
+            if(!hasCyclicMap.get(group)){
+                // is acyclic
+                addVectorizableGroup(outString, group, null);
+            }
+        }
+        // generate code
+        if(outString.size() > 0) {
+            newFor.add(vectorizeStmt(tfor.getAssignStmt()));
+            for (String s : outString) {
+                newFor.add(s);
+            }
+        }
+        if(loopStmts.size() > 0){
+            // remained for
+            newFor.add("for "+vectorizeStmt(tfor.getAssignStmt()));
+            for(ASTNode a : loopStmts) {
+                newFor.add(vectorizeStmt(a));
+            }
+            newFor.add("end");
+        }
+
+        return newFor;
+    }
+
+    public void addVectorizableGroup(java.util.List<String> outString,
+                                     Map<ASTNode, DepNode> group,
+                                     Map<ASTNode, String> modifiedMap){
+        TopologicalSort ts = new TopologicalSort(group);
+        java.util.List<ASTNode> sortedList = ts.sort();
+        for(ASTNode a : sortedList){
+            if(modifiedMap!=null && modifiedMap.containsKey(a))
+                outString.add(modifiedMap.get(a));
+            else
+                outString.add(vectorizeStmt(a));
+        }
+//        outStmts.addAll(sortedList);
+    }
+
+    public String vectorizeStmt(ASTNode node){
+        return node.getPrettyPrinted().trim();
     }
 
     public void addInSet(Set<Expr> x, Expr e){

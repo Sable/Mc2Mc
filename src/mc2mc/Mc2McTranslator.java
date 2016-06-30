@@ -16,9 +16,23 @@ public class Mc2McTranslator {
             PrintMessage.Error("No options given\\nTry --help for usage");
         }
 
+
         ReadOptions options = new ReadOptions();
         JCommander jcommander = new JCommander(options, args);
         jcommander.setProgramName("Mc2Mc");
+
+        PrintMessage.welcomeWords();
+        if(options.isOptViewer){
+
+        }
+        else {
+            if (options.outDir.equals("")) {
+                PrintMessage.Error("Please provide a valid output directory by using -out \"dir\"");
+            } else if (options.outDir.equals("./")) {
+                PrintMessage.Error("The directory ./ is not acceptable\n" +
+                        "Please provide a valid output directory by using -out \"dir\"");
+            }
+        }
 
         String[] parameters = options.arguments.split(" ");
         PrintMessage.arrayList(parameters, "Option information");
@@ -28,17 +42,25 @@ public class Mc2McTranslator {
 //        int argSize =args.length;
 //        String[] parameters = options.arguments.subList(1,argSize).toArray(new String[0]);
         String mainFile = options.inputArgs.get(0);
-        TirAnalysis tira = new TirAnalysis(mainFile, parameters);
+        String outDir = options.outDir;
+        while(true) {
+            TirAnalysis tira = new TirAnalysis(mainFile, parameters, outDir);
+            if(options.isOptViewer){
+                tira.RunTamerViewer();
+                break;
+            }
+            else {
+                tira.runAnalysis(); //main analysis
+                if (tira.getNoChange()) break;
+                mainFile = tira.getOutPath();
+            }
+            break;
+        }
+        PrintMessage.See("Exit successfully");
         //tira.TestTirFunction();
         //tira.TirValueAnalysis();
         //tira.TestLocalAnalysis();
 
-        if(options.isOptViewer){
-            tira.RunTamerViewer();
-        }
-        else {
-            tira.runAnalysis();
-        }
     }
 
     public static void runOptions(ReadOptions opt, JCommander jc){
@@ -54,4 +76,5 @@ public class Mc2McTranslator {
 //            System.exit(0);
 //        }
     }
+
 }
