@@ -66,6 +66,9 @@ public class TirAnalysisDep {
         if(node instanceof AssignStmt){
 //            if(localDUMap.get(node)!=null) { //e.g. i=1:n in for statement
                 if (isCollect) {
+                    if(((AssignStmt) node).getLHS().getPrettyPrinted().trim().equals("[mc_t253]")){
+                        int xx = 10;
+                    }
                     stmtMap.put(node, new DepNode(node));
                     stmtBool.put(node, false);
                 }
@@ -82,7 +85,8 @@ public class TirAnalysisDep {
     }
 
     public void processStmt(AssignStmt node){
-        PrintMessage.See("processing: " + node.getPrettyPrinted().trim());
+        if(debug)
+            PrintMessage.See("processing: " + node.getPrettyPrinted().trim());
         findFlowDep(node);
 //        Map<String, Set<TIRNode>> useSet = localUDMap.get(node);
 //        HashMap<String, HashSet<TIRNode>> useSet = localDUMap.get(node);
@@ -113,23 +117,42 @@ public class TirAnalysisDep {
         }
 
         for(Expr e : allWrite){
-            if(e instanceof NameExpr){ // e.g. a
-                String lhsName = ((NameExpr) e).getName().getID();
-                if(useSet.get(lhsName)==null){
-                    PrintMessage.See("[null node] " + node.getPrettyPrinted().trim());
-                }
-                else {
-                    Set<TIRNode> uses = getOneUses(useSet, lhsName);
-                    if(uses!=null) {
-                        for (TIRNode t : uses) {
-                            DepNode child = stmtMap.get(t);
-                            int kind = !stmtBool.get(t) ? 1 : t.equals(node) ? 0: 2;
-                            stmtMap.get(node).setChild(child, kind); //forward or anti
+            if(e instanceof NameExpr || e instanceof MatrixExpr){ // e.g. a
+                Set<String> writeString = ((AssignStmt)node).getLValues();
+                for(String lhsName : writeString) {
+                    if (lhsName.equals("q")) {
+                        int xx = 10;
+                    }
+                    if (useSet.get(lhsName) == null) {
+                        PrintMessage.See("[null node] " + node.getPrettyPrinted().trim());
+                    } else {
+                        Set<TIRNode> uses = getOneUses(useSet, lhsName);
+                        if (uses != null) {
+                            for (TIRNode t : uses) {
+                                DepNode child = stmtMap.get(t);
+                                int kind = !stmtBool.get(t) ? 1 : t.equals(node) ? 0 : 2;
+                                stmtMap.get(node).setChild(child, kind); //forward or anti
                             /*
                             * exception
                             * a = ...
                             * . = a(i);
                             */
+                            }
+                        }
+                        else{
+                            Set<TIRNode> blockUses = getBlockUses(useSet, lhsName);
+                            if(blockUses.size()==0){ //output
+                                int kind = 3;
+                                DepNode child = stmtMap.get(node);
+                                stmtMap.get(node).setChild(child, kind);
+                            }
+                            else{
+                                for(TIRNode t : blockUses) { //same as above?
+                                    DepNode child = stmtMap.get(t);
+                                    int kind = !stmtBool.get(t) ? 1 : t.equals(node) ? 0 : 2;
+                                    stmtMap.get(node).setChild(child, kind);
+                                }
+                            }
                         }
                     }
                 }
@@ -451,6 +474,18 @@ public class TirAnalysisDep {
             }
         }
         return uses;
+    }
+
+    private Set<TIRNode> getBlockUses(HashMap<String, HashSet<TIRNode>> useSet, String var){
+        HashSet<TIRNode> uses = useSet.get(var);
+        Set<TIRNode> newUses = new HashSet<>();
+        boolean isAll = true;
+        for(TIRNode u : uses){
+            if(stmtMap.containsKey(u)){
+                newUses.add(u);
+            }
+        }
+        return newUses;
     }
 
     public int myGCD(int a, int b){

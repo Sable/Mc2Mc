@@ -43,7 +43,9 @@ public class Mc2McTranslator {
 //        String[] parameters = options.arguments.subList(1,argSize).toArray(new String[0]);
         String mainFile = options.inputArgs.get(0);
         String outDir = options.outDir;
+        int cnt = 0;
         while(true) {
+            PrintMessage.See(cnt+"", "Round");
             TirAnalysis tira = new TirAnalysis(mainFile, parameters, outDir);
             if(options.isOptViewer){
                 tira.RunTamerViewer();
@@ -54,7 +56,8 @@ public class Mc2McTranslator {
                 if (tira.getNoChange()) break;
                 mainFile = tira.getOutPath();
             }
-            break;
+//            if(cnt == 0) break;
+            cnt++;
         }
         PrintMessage.See("Exit successfully");
         //tira.TestTirFunction();

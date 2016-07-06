@@ -1,9 +1,8 @@
 package mc2mc.analysis;
 
-import ast.*;
-import mc2mc.mc2lib.CommonFunction;
-import mc2mc.mc2lib.PrintMessage;
-import mc2mc.mc2lib.TamerViewer;
+import ast.ASTNode;
+import ast.Stmt;
+import mc2mc.mc2lib.*;
 import natlab.tame.BasicTamerTool;
 import natlab.tame.callgraph.SimpleFunctionCollection;
 import natlab.tame.callgraph.StaticFunction;
@@ -19,10 +18,7 @@ import natlab.tame.valueanalysis.basicmatrix.BasicMatrixValue;
 import natlab.toolkits.filehandling.GenericFile;
 import natlab.toolkits.path.FileEnvironment;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * TirAnalyses
@@ -100,7 +96,6 @@ public class TirAnalysis {
             IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis =
                     localAnalysis.getNodeList().get(i).getAnalysis();
             TIRFunction tirfunc = funcanalysis.getTree();
-            boolean isMainFunc = mainFuncName.equals(tirfunc.getName().getID());
 
             List<String> oldFn = CommonFunction.transformFunction(tirfunc, null, 2);
 
@@ -144,52 +139,153 @@ public class TirAnalysis {
 //                PrintMessage.See("start tirfun analyze");
                 tirfunc.analyze(new TirAnalysisSubExprPrint(tirsub));
             } else if (op == 2) {
-                PrintMessage.See("** [Phase 1] Run loop analysis **", tirfunc.getName().getID());
-                TirAnalysisLoop tirLoop = new TirAnalysisLoop(engine, funcValueMap);
+
+                RenameSpecialName rs = new RenameSpecialName(funcValueMap.get(tirfunc));
+                tirfunc.analyze(rs); // rename mtimes and mrdivde
+
+                String currentFuncName = tirfunc.getName().getID();
+                PrintMessage.See("** [Phase 1] Run loop analysis **", currentFuncName);
+                TirAnalysisLoop tirLoop = new TirAnalysisLoop(engine, funcValueMap, currentFuncName);
                 tirfunc.analyze(tirLoop);
-                List<String> newFn = CommonFunction.transformFunction(tirfunc, tirLoop.getStmtHashMap(), 2);
-                if(!sameFunction(oldFn, newFn)){
+                if(currentFuncName.equals("seidel")){
+                    int xx = 10;
+                }
+                List<String> newFn = null;
+                if(!CommonFunction.getFnHashMap().containsKey(tirfunc)) {
+                    for(ASTNode a : tirLoop.getStmtHashMap().keySet()){
+                        PrintMessage.See(a.getPrettyPrinted(), "stmt map");
+                    }
+                    newFn = CommonFunction.transformFunction(tirfunc, tirLoop.getStmtHashMap(), 2);
+                }
+                else {
+                    newFn = CommonFunction.getFnHashMap().get(tirfunc);
+                }
+                if (!CommonFunction.sameFunction(oldFn, newFn)) {
                     //save
                     CommonFunction.setFnHashMap(tirfunc, newFn);
+                }
+
+                if(CommonFunction.getFnHashMap().size() > 0){
                     noChange = false;
                 }
-                String flatString = flatListString(newFn);
-                if(isMainFunc) newProgram.set(0, flatString);
-                else newProgram.add(flatString);
 
 //                tirLoop.printRWSet();
-                PrintMessage.See("** [Phase 2] Code generation **", tirfunc.getName().getID());
+//                PrintMessage.See("** [Phase 2] Code generation **", tirfunc.getName().getID());
                 TirAnalysisTrim tirTrim = new TirAnalysisTrim(engine);
                 tirfunc.analyze(tirTrim);
                 tirTrim.printSets();
             }
         }
+
+        Set<String> fnNameSet = new HashSet<>();
+        for (int i = 0; i < localAnalysis.getNodeList().size(); i++) {
+            IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis =
+                    localAnalysis.getNodeList().get(i).getAnalysis();
+            TIRFunction tirfunc = funcanalysis.getTree();
+            String fName = tirfunc.getName().getID();
+            boolean isMainFunc = mainFuncName.equals(fName);
+            if(fnNameSet.contains(fName)) continue;
+            fnNameSet.add(fName);
+
+            String flatString = null;
+            if(CommonFunction.getFnHashMap().containsKey(tirfunc)){
+                List<String> newFn = CommonFunction.getFnHashMap().get(tirfunc);
+                flatString = flatListString(newFn);
+            }
+            else{
+                List<String> oldFn = CommonFunction.transformFunction(tirfunc, null, 2);
+                flatString = flatListString(oldFn);
+            }
+
+            if(isMainFunc)
+                newProgram.set(0, flatString);
+            else
+                newProgram.add(flatString);
+        }
         // update new functions
         if(debug)
             CommonFunction.printFnHashMap();
 
+        PrintMessage.See("noChange? " + noChange, "check change");
+
 //      TempFactory.setPrefix("set temp prefix");
         if (noChange) {
-            List<String> resultList = new ArrayList<>();
-            resultList.add("main");
-            for (StaticFunction f : localAnalysis.getFunctionCollection().getAllFunctions()) {
-                String fnString = TransformationEngine.forAST(f.getAst())
-                        .getTIRToMcSAFIRWithoutTemp()
-                        .getTransformedTree()
-                        .getPrettyPrinted();
-                if(f.getName().equals(mainFuncName)){ //main function
-                    resultList.set(0,fnString);
+            int writeOp = 2; // 1: TameIR; 2:Plus; 3:Trick
+            if(writeOp == 1) {
+                List<String> resultList = new ArrayList<>();
+                resultList.add("main");
+                for (StaticFunction f : localAnalysis.getFunctionCollection().getAllFunctions()) {
+//                String fnString = TransformationEngine.forAST(f.getAst())
+//                        .getTIRToMcSAFIRWithoutTemp()
+//                        .getTransformedTree()
+//                        .getPrettyPrinted();
+                    String fnString = f.getAst().getPrettyPrinted();
+                    if (f.getName().equals(mainFuncName)) { //main function
+                        resultList.set(0, fnString);
+                    } else {
+                        resultList.add(fnString);
+                    }
                 }
-                else{
-                    resultList.add(fnString);
-                }
+                CommonFunction.save2File(resultList, outPath); //save to a final file
+                PrintMessage.See("Wrote to a final file");
             }
-            CommonFunction.save2File(resultList, outPath); //save to a temp file
-            PrintMessage.See("Write to a final file");
+            else if(writeOp==2) {
+                List<String> finalFn = new ArrayList<>();
+                finalFn.add("main");
+                for (int i = 0; i < localAnalysis.getNodeList().size(); i++) {
+                    IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis =
+                            localAnalysis.getNodeList().get(i).getAnalysis();
+                    TIRFunction tirfunc = funcanalysis.getTree();
+                    AnalysisEngine engine = AnalysisEngine.forAST(tirfunc);
+
+                    TirAnalysisTrick tirTrick = new TirAnalysisTrick(engine);
+                    tirfunc.analyze(tirTrick);
+
+                    TamerPrint tp = new TamerPrint(engine, tirfunc);
+                    tp.processBlocks();
+//                    tp.printBlocks();
+                    List<String> oneFn = CommonFunction.transformFunction(tirfunc, tp.getMap2String(), tp.getMapped(), tirTrick.trickMap);
+                    String fnString = flatListString(oneFn);
+                    if (tirfunc.getName().getID().equals(mainFuncName)) { //main function
+                        finalFn.set(0, fnString);
+                    }
+                    else {
+                        finalFn.add(fnString);
+                    }
+                }
+                CommonFunction.save2File(finalFn, outPath); //save to a final file
+                PrintMessage.See("Wrote to a final file");
+            }
+            else {
+                List<String> finalFn = new ArrayList<>();
+                finalFn.add("main");
+                for (int i = 0; i < localAnalysis.getNodeList().size(); i++) {
+                    IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis =
+                            localAnalysis.getNodeList().get(i).getAnalysis();
+                    TIRFunction tirfunc = funcanalysis.getTree();
+                    AnalysisEngine engine = AnalysisEngine.forAST(tirfunc);
+
+                    TirAnalysisTrick tirTrick = new TirAnalysisTrick(engine);
+                    tirfunc.analyze(tirTrick);
+//                    tirTrick.printTrickMap();
+
+
+                    List<String> oneFn = CommonFunction.transformFunction(tirfunc, tirTrick.trickMap);
+                    String fnString = flatListString(oneFn);
+                    if (tirfunc.getName().getID().equals(mainFuncName)) { //main function
+                        finalFn.set(0, fnString);
+                    }
+                    else {
+                        finalFn.add(fnString);
+                    }
+                }
+                CommonFunction.save2File(finalFn, outPath); //save to a final file
+                PrintMessage.See("Wrote to a final file 3");
+            }
         }
         else {
             CommonFunction.save2File(newProgram, outPath);
-            PrintMessage.See("Write to a temp file");
+            PrintMessage.See("Wrote to a temp file");
         }
 
     }
@@ -214,24 +310,7 @@ public class TirAnalysis {
 //    }
 
 
-    public boolean sameFunction(List<String> oldFn, List<String> newFn){
-        int oldLen = oldFn.size();
-        int newLen = newFn.size();
-        if(oldLen != newLen){
-            PrintMessage.See("oldLen, newLen = " + oldLen + ", " + newLen, "length error");
-            return false;
-        }
-        else{
-            for(int i=0;i<oldLen;i++){
-                if(!oldFn.get(i).equals(newFn.get(i))){
-                    PrintMessage.See("["+i+"] " + oldFn.get(i), "Old String");
-                    PrintMessage.See("["+i+"] " + newFn.get(i), "New String");
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
+
 
     public boolean getNoChange(){
         return noChange;
@@ -265,6 +344,9 @@ public class TirAnalysis {
                     return names + s.substring(bracket+1);
                 }
             }
+        }
+        else if(s.startsWith("function")){
+            return "function " + trimCallStmt(s.substring(8).trim());
         }
         return  s;
     }

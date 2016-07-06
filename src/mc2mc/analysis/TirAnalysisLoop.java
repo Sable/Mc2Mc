@@ -33,12 +33,17 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
     private Map<ASTNode, ValueFlowMap<AggrValue<BasicMatrixValue>>> fValueMap;
     private AnalysisEngine localEngine = null;
     private Map<ASTNode, List<String>> stmtHashMap = null; //<TIRForStmt, list<String>>
+    private String currentFuncName;
+    public static boolean debug = false;
 
-    public TirAnalysisLoop(AnalysisEngine engine, Map<ASTNode, ValueFlowMap<AggrValue<BasicMatrixValue>>> valueMap){
+    public TirAnalysisLoop(AnalysisEngine engine,
+                           Map<ASTNode, ValueFlowMap<AggrValue<BasicMatrixValue>>> valueMap,
+                           String funcName){
         fUDMap = engine.getUDChainAnalysis().getChain(); //UDChain
         fValueMap = valueMap;
         localEngine = engine;
         stmtHashMap = new HashMap<>();
+        currentFuncName = funcName;
     }
 
     @Override
@@ -58,7 +63,7 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
     @Override
     public void caseTIRForStmt(TIRForStmt node) {
         // do something
-        PrintMessage.See("entering");
+//        PrintMessage.See("entering");
         findInnerFor(node);
     }
 
@@ -133,16 +138,23 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
 //            collectRW((TIRForStmt)node);
 //            buildDepGraph((TIRForStmt)node);
 //            processStmt((TIRForStmt) node, fValueMap.get(node));
+            if(currentFuncName.equals("crnich")){
+                int xx = 10;
+            }
             PrintMessage.See("Getting outFlow", "AnalysisLoop");
             TirAnalysisPropagateShape tirPS = new TirAnalysisPropagateShape(node, fValueMap);
             tirPS.analyze();
-            node.analyze(new TirAnalysisLoopPrint(tirPS));
+            if(debug)
+                node.analyze(new TirAnalysisLoopPrint(tirPS));
             Map<ASTNode, Map<String, PromotedShape>> outFlow = tirPS.getOutFlowSets();
             PrintMessage.See("Getting depGraph", "AnalysisLoop");
             TirAnalysisDep tirDep = new TirAnalysisDep(localEngine, node);
             tirDep.run();
             PrintMessage.See("Getting newFor", "AnalysisLoop");
             Map<ASTNode, DepNode> depGraph = tirDep.getDepGraph();
+            if(currentFuncName.equals("crnich")){
+                int xx = 10;
+            }
             java.util.List<String> newFor = vectorizeFor(node, outFlow, depGraph);
             stmtHashMap.put(node, newFor);
         }
@@ -171,11 +183,14 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
         Map<Map<ASTNode, DepNode>, Boolean> hasCyclicMap= tSort.getIsCyclic();
         java.util.List<String> newFor = new ArrayList<>();
         Map<ASTNode, String> modifiedMap = new HashMap<>(); //special patterns
-        Set<Map<ASTNode, DepNode>> groupSpecial = new HashSet<>();
+        Map<Map<ASTNode, DepNode>, Boolean> groupSpecial = new HashMap<>();
 
         for(ASTNode stmt : tfor.getStatements()){
             // generate sequential code here
             if(stmt instanceof TIRCommentStmt) continue;; // block it?
+            if(stmt instanceof AssignStmt && ((AssignStmt) stmt).getLHS().getPrettyPrinted().trim().equals("mc_t181")){
+                int xx =10;
+            }
             Map<ASTNode, DepNode> group = node2Map.get(stmt);
             if(!nodeFlag.containsKey(group) || nodeFlag.get(group)){
                 boolean notTop = true;
@@ -191,29 +206,39 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
                 if(!notTop || isAcyclic){
                     // add all of statements
                     if(notTop && isAcyclic){
-                        if(!groupSpecial.contains(group))
-                            groupSpecial.add(group);
+                        if(!groupSpecial.containsKey(group)) {
+                            boolean status = false;
+                            if(tSort.matchIdiom1(group, null, null)) {
+                                java.util.List<String> remainedString = new ArrayList<>();
+                                tSort.matchIdiom1(group, modifiedMap, remainedString);
+                                addVectorizableGroup(outString, group, modifiedMap);
+                                for (String s : remainedString) {
+                                    outString.add(s);
+                                }
+                                status = true;
+                            }
+                            else {
+                                status = false;
+                                loopStmts.add(stmt);
+                            }
+                            groupSpecial.put(group, status);
+                        }
+                        else if(!groupSpecial.get(group)){
+                            loopStmts.add(stmt);
+                        }
                     }
                     else {
                         loopStmts.add(stmt);
                     }
                 }
             }
-        }
-        //special group
-        for(Map<ASTNode, DepNode> g : groupSpecial){
-            if(tSort.matchIdiom1(g, null, null)) {
-                java.util.List<String> remainedString = new ArrayList<>();
-                tSort.matchIdiom1(g, modifiedMap, remainedString);
-                addVectorizableGroup(outString, g, modifiedMap);
-                for (String s : remainedString) {
-                    outString.add(s);
-                }
+            else {
+                loopStmts.add(stmt);
             }
         }
 
         for(Map<ASTNode, DepNode> group : hasCyclicMap.keySet()){
-            if(!hasCyclicMap.get(group)){
+            if(!hasCyclicMap.get(group) && nodeFlag.get(group)){
                 // is acyclic
                 addVectorizableGroup(outString, group, null);
             }
@@ -497,7 +522,7 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
                     ps.setB();
                     // first, should test whether it is a P
                     if(name.equals(iter)){
-                        ps.setP(re, 0); //change later
+//                        ps.setP(re, 0); //change later
                     }
                     else {
                         Shape psShape = getValueShape(name, valueMap);

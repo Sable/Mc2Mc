@@ -49,6 +49,7 @@ public class TirAnalysisTrim extends TIRAbstractNodeCaseHandler {
         }
     }
 
+
     @Override
     public void caseTIRArraySetStmt(TIRArraySetStmt node){
         String arrayName = node.getArrayName().getID();
@@ -57,6 +58,8 @@ public class TirAnalysisTrim extends TIRAbstractNodeCaseHandler {
             TIRNode oneDef = defSet.iterator().next();
             String[] defSide = isPrealloc((ASTNode)oneDef);
             String[] useSide = collectIndices(node);
+            if(defSide == null || useSide == null)
+                return; // do nothing
             int defNum = defSide.length;
             int useNum = useSide.length / 2;
             boolean doable = false;

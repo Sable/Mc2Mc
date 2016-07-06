@@ -20,15 +20,40 @@ public class CommonFunction {
     private static Set<String> funcNameList = new HashSet<>();
     private static ValueAnalysis<AggrValue<BasicMatrixValue>> localAnalysis;
     private static Map<ASTNode, List<String>> fnHashMap = null;
+    private static Set<ASTNode> fnSkipSet = null;
     private static String mainFile = "";
     private static String tempFile = "";
+    private static Stack<String> runtimeStack = null;
 
     public static void initFnHashMap(){
         fnHashMap = new HashMap<>();
+        fnSkipSet = new HashSet<>();
+    }
+
+    public static void addToSkipSet(ASTNode node){
+        fnSkipSet.add(node);
     }
 
     public static void setFnHashMap(ASTNode node, List<String> content){
+        if(fnSkipSet.contains(node)){
+            return ;
+        }
+//        if(fnHashMap.containsKey(node)){
+//            if(!sameFunction(content, fnHashMap.get(node))){
+//                fnSkipSet.add(node);
+//            }
+//        }
+//        else
         fnHashMap.put(node, content);
+    }
+
+    public static Map<ASTNode, List<String>> getFnHashMap(){
+        Map<ASTNode, List<String>> newMap = new HashMap<>();
+        for(ASTNode a : fnHashMap.keySet()){
+            if(!fnSkipSet.contains(a))
+                newMap.put(a, fnHashMap.get(a));
+        }
+        return newMap;
     }
 
     public static void printFnHashMap(){
@@ -255,6 +280,239 @@ public class CommonFunction {
             i++;
         }
         return rtn;
+    }
+
+    public static List<String> transformFunction(ASTNode node,
+                                                 Map<ASTNode, String> map2String,
+                                                 Set<ASTNode> mapped,
+                                                 Map<ASTNode, String> trickMap){
+        List<String> rtn = new ArrayList<>();
+        if(node instanceof TIRFunction) {
+            String inputP = genParameterList(((TIRFunction) node).getInputParamList());
+            String outputP= genParameterList(((TIRFunction) node).getOutputParamList());
+            rtn.add("function "
+                    + (outputP.isEmpty()?"":"["+outputP+"] = ")
+                    + ((TIRFunction) node).getName().getID()
+                    +"(" + inputP + ")");
+            for (Stmt s : ((TIRFunction)node).getStmtList()) {
+                rtn.addAll(transformFunction(s, map2String, mapped,trickMap));
+            }
+            rtn.add("end");
+        }
+        else if(node instanceof TIRIfStmt){
+            rtn.add("if " + ((TIRIfStmt) node).getConditionVarName().getID());
+            for (Stmt s : ((TIRIfStmt) node).getIfStatements()) {
+                rtn.addAll(transformFunction(s, map2String, mapped, trickMap));
+            }
+            rtn.add("else");
+            if(((TIRIfStmt) node).hasElseBlock()){
+                for(Stmt s : ((TIRIfStmt) node).getElseStatements()){
+                    rtn.addAll(transformFunction(s, map2String, mapped, trickMap));
+                }
+            }
+            rtn.add("end");
+        }
+        else if(node instanceof TIRForStmt){
+            rtn.add("for " + ((TIRForStmt) node).getAssignStmt().getPrettyPrinted().trim());
+            for(Stmt s : ((TIRForStmt) node).getStatements()){
+                rtn.addAll(transformFunction(s, map2String, mapped, trickMap));
+            }
+            rtn.add("end");
+        }
+        else if(node instanceof TIRStmt){
+            if(mapped.contains(node)){
+                ; // continue
+            }
+            else{
+                if (node instanceof TIRArraySetStmt && trickMap.containsKey(node)){
+                    String trueString = ((TIRArraySetStmt) node).getArrayName().getID() + '=' + map2String.get(node) + ";";
+                    String falseString = ((TIRArraySetStmt) node).getLHS().getPrettyPrinted().trim()
+                            + '='
+                            + map2String.get(node)
+                            + ";";
+                    String cond = trickMap.get(node);
+                    rtn.add("if " + cond + "\n" + trueString + "\nelse\n" + falseString + "\nend");
+                }
+                else {
+                    String rightHand = map2String.get(node);
+                    String leftHand = "";
+                    if (node instanceof AssignStmt) {
+                        leftHand = ((AssignStmt) node).getLHS().getPrettyPrinted().trim();
+                    }
+                    if (rightHand == null) {
+                        PrintMessage.See(node.dumpString(), "debugging");
+                        PrintMessage.See(node.getPrettyPrinted(), "debugging");
+                    }
+                    if (rightHand.equals("tic()")) {
+                        int xx = 10;
+                    }
+                    String line = (leftHand.isEmpty() || leftHand.equals("[]") ? rightHand : leftHand + " = " + rightHand);
+                    if (!line.isEmpty())
+                        rtn.add(line + ";");
+//                Map<String, ASTNode> useSet = useMap.get(node);
+//                if(useSet==null || useSet.size() == 0){
+//                    rtn.add(node.getPrettyPrinted().trim());
+//                }
+//                else{
+//                    rtn.add(getNode(node, useMap));
+//                }
+                }
+            }
+        }
+        else {
+            String[] mutipleLine = node.getPrettyPrinted().trim().split("\\\n");
+            for(String line : mutipleLine) {
+                rtn.add(line.trim());
+            }
+        }
+        return rtn;
+    }
+
+    public static String getNode(ASTNode node, Map<ASTNode, Map<String, ASTNode>> useMap){
+        String rtn = "";
+        if(node instanceof TIRCallStmt){
+            rtn = ((TIRCallStmt) node).getLHS().getPrettyPrinted().trim()
+                    + " = "
+                    + ((TIRCallStmt) node).getFunctionName().getID()
+                    + "(";
+            int cnt = 0;
+            for(Expr n : ((TIRCallStmt) node).getArguments()){
+                if(cnt > 0)
+                    rtn += ", ";
+                if(n instanceof NameExpr){
+                    String name = n.getVarName();
+                    rtn += getNodeSub(useMap.get(node).get(name), useMap);
+                }
+                else {
+                    rtn += n.getPrettyPrinted().trim();
+                }
+                cnt ++;
+            }
+            rtn += ");";
+        }
+        else if(node instanceof TIRCopyStmt){
+            String rhsName = ((TIRCopyStmt) node).getSourceName().getID();
+            rtn = ((TIRCopyStmt) node).getLHS().getPrettyPrinted().trim()
+                    + " = "
+                    + getNodeSub(useMap.get(node).get(rhsName), useMap)
+                    + ";";
+        }
+        else if(node instanceof TIRArraySetStmt){
+            String rhsName = ((TIRArraySetStmt) node).getRHS().getPrettyPrinted();
+            rtn = ((TIRArraySetStmt) node).getLHS().getPrettyPrinted().trim()
+                    + " = "
+                    + getNodeSub(useMap.get(node).get(rhsName), useMap)
+                    + ";";
+        }
+        else if(node instanceof TIRStmt && !(node instanceof AssignStmt)){
+            Set<NameExpr> neSet = node.getNameExpressions();
+            rtn = node.getPrettyPrinted();
+            for(NameExpr ne : neSet){
+                String name =ne.getVarName();
+                rtn = rtn.replace(name, getNodeSub(useMap.get(node).get(name), useMap)); // not safe
+            }
+        }
+        return rtn;
+    }
+
+    public static String getNodeSub(ASTNode node, Map<ASTNode, Map<String, ASTNode>> useMap){
+        String rtn = "";
+        if(node instanceof TIRCallStmt){
+            rtn = ((TIRCallStmt) node).getFunctionName().getID() + "(";
+            int cnt = 0;
+            for(Expr n : ((TIRCallStmt) node).getArguments()){
+                if(cnt > 0)
+                    rtn += ", ";
+                if(n instanceof NameExpr){
+                    String name = n.getVarName();
+                    rtn += getNodeSub(useMap.get(node).get(name), useMap);
+                }
+                else {
+                    rtn += n.getPrettyPrinted().trim();
+                }
+                cnt ++;
+            }
+            rtn += ")";
+        }
+        else if(node instanceof AssignStmt){
+            rtn = ((AssignStmt) node).getRHS().getPrettyPrinted().trim();
+        }
+        return rtn;
+    }
+
+    public static boolean sameFunction(List<String> oldFn, List<String> newFn){
+        int oldLen = oldFn.size();
+        int newLen = newFn.size();
+        if(oldLen != newLen){
+            PrintMessage.See("oldLen, newLen = " + oldLen + ", " + newLen, "length error");
+            return false;
+        }
+        else{
+            for(int i=0;i<oldLen;i++){
+                if(!oldFn.get(i).equals(newFn.get(i))){
+                    PrintMessage.See("["+i+"] " + oldFn.get(i), "Old String");
+                    PrintMessage.See("["+i+"] " + newFn.get(i), "New String");
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    public static List<String> transformFunction(ASTNode node, Map<ASTNode, String> map2String){
+        List<String> rtn = new ArrayList<>();
+        if(node instanceof TIRFunction) {
+            String inputP = genParameterList(((TIRFunction) node).getInputParamList());
+            String outputP= genParameterList(((TIRFunction) node).getOutputParamList());
+            rtn.add("function "
+                    + (outputP.isEmpty()?"":"["+outputP+"] = ")
+                    + ((TIRFunction) node).getName().getID()
+                    +"(" + inputP + ")");
+            for (Stmt s : ((TIRFunction)node).getStmtList()) {
+                rtn.addAll(transformFunction(s, map2String));
+            }
+            rtn.add("end");
+        }
+        else if(node instanceof TIRIfStmt){
+            rtn.add("if " + ((TIRIfStmt) node).getConditionVarName().getID());
+            for (Stmt s : ((TIRIfStmt) node).getIfStatements()) {
+                rtn.addAll(transformFunction(s, map2String));
+            }
+            rtn.add("else");
+            if(((TIRIfStmt) node).hasElseBlock()){
+                for(Stmt s : ((TIRIfStmt) node).getElseStatements()){
+                    rtn.addAll(transformFunction(s, map2String));
+                }
+            }
+            rtn.add("end");
+        }
+        else if(node instanceof TIRForStmt){
+            rtn.add("for " + ((TIRForStmt) node).getAssignStmt().getPrettyPrinted().trim());
+            for(Stmt s : ((TIRForStmt) node).getStatements()){
+                rtn.addAll(transformFunction(s, map2String));
+            }
+            rtn.add("end");
+        }
+        else if(node instanceof TIRStmt){
+            if(map2String.containsKey(node)) {
+                addStrings(rtn, map2String.get(node).split("\\\n"));
+            }
+            else
+                rtn.add(node.getPrettyPrinted().trim());
+        }
+        else {
+            String[] mutipleLine = node.getPrettyPrinted().trim().split("\\\n");
+            for(String line : mutipleLine) {
+                rtn.add(line.trim());
+            }
+        }
+        return rtn;
+    }
+
+    private static void addStrings(List<String> rtn, String[] mutipleLine){
+        for(String s : mutipleLine){
+            rtn.add(s);
+        }
     }
 
 }

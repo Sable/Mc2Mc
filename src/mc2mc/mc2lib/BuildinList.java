@@ -67,20 +67,36 @@ public class BuildinList {
 
     public static PromotedShape binaryTable(PromotedShape p1, PromotedShape p2){
         int shape = tableBIF2[p1.getShape()][p2.getShape()];
+        PromotedShape rtn = new PromotedShape();
         if(p1.isN() && p2.isN()){
-            //
+            if(p1.equals(p2))
+                rtn.copyPS(p1);
+            else
+                rtn.setT();
         }
         else if(p1.isP() && p2.isP()){
             // check dim
-        }
-
-        if(shape ==2){
-            return new PromotedShape(p1.isN()?p1:p2);
+            if(p1.equals(p2))
+                rtn.copyPS(p2);
+            else
+                rtn.setT();
         }
         else if(shape == 3){ // P
-            return new PromotedShape(p1.isP()?p1:p2);
+            rtn.copyPS(p1.isP()?p1:p2);
         }
-        return new PromotedShape(shape);
+        else if(shape == 2){ // N
+            rtn.copyPS(p1.isN()?p1:p2);
+        }
+        else if(shape == 1){
+            rtn.setS();
+        }
+        else if(shape == 4){
+            rtn.setT();
+        }
+        else {
+            rtn.setB();
+        }
+        return rtn;
     }
 
     public static PromotedShape mergeTwo(PromotedShape p1, PromotedShape p2){

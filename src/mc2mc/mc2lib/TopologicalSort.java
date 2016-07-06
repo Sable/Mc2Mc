@@ -6,6 +6,7 @@ import ast.Expr;
 import ast.NameExpr;
 import mc2mc.analysis.DepNode;
 import natlab.tame.tir.TIRCallStmt;
+import natlab.tame.tir.TIRCopyStmt;
 
 import java.util.*;
 
@@ -17,7 +18,7 @@ public class TopologicalSort {
     Map<ASTNode, DepNode> localStmtMap;
     Map<ASTNode, Boolean> localFlagMap;
     List<ASTNode> outputList = null;
-    public static boolean debug = true;
+    public static boolean debug = false;
     Set<Map<ASTNode, DepNode>> subGraph = null;
     Map<Map<ASTNode, DepNode>, Boolean> hasCyclicMap = null;
     Map<Map<ASTNode, DepNode>, Map<ASTNode, Boolean>> cyclicMap = null;
@@ -156,7 +157,29 @@ public class TopologicalSort {
                                 remainedString.add(lhsName + " = plus(" + lhsName + ", " + temp1 + ");");
                             }
                             succeed = true;
-                            PrintMessage.See("Pattern 1 was found");
+                            PrintMessage.See("Pattern 1.1 was found");
+                        }
+                    }
+                    else if(n2 instanceof TIRCopyStmt
+                            && n1 instanceof TIRCallStmt
+                            && ((TIRCallStmt) n1).getFunctionName().getID().equals("plus")){
+                        String lhsName2 = ((TIRCopyStmt)n2).getLValues().iterator().next();
+                        for(Expr n : ((TIRCallStmt)n1).getArguments()){
+                            if(n instanceof NameExpr){
+                                if(((NameExpr) n).getName().getID().equals(lhsName2));
+                                else another = ((NameExpr) n).getName().getID();
+                            }
+                        }
+                        if(!another.isEmpty()) {
+                            if (modifiedMap != null) {
+                                modifiedMap.put(n2, "%" + n2.getPrettyPrinted().trim());
+                                modifiedMap.put(n1, "%" + n1.getPrettyPrinted().trim());
+                                String temp0 = "mc_sum0";
+                                remainedString.add(temp0 + " = sum(" + another + ");");
+                                remainedString.add(lhsName + " = plus(" + lhsName + ", " + temp0 + ");");
+                            }
+                            succeed = true;
+                            PrintMessage.See("Pattern 1.2 was found");
                         }
                     }
                 }
@@ -181,24 +204,29 @@ public class TopologicalSort {
             subGraphCount.put(a, cnt++);
         }
 
-        for(ASTNode a : smallMap.keySet()){
-            for(DepNode d : smallMap.get(a).getChild()){
-                ASTNode c = d.getStmt();
-                int cntA = subGraphCount.get(a);
-                int cntC = subGraphCount.get(c);
-                if(cntA != cntC){
-                    int v = Math.min(cntA, cntC);
-                    if(v == cntA) {
-                        subGraphCount.put(c, v);
-                        updateParentNode(c,smallMap,subGraphCount,v);
-                    }
-                    else {
-                        subGraphCount.put(a, v);
-                        updateParentNode(a,smallMap,subGraphCount,v);
+        boolean changeSet = false;
+        do {
+            changeSet = false;
+            for (ASTNode a : smallMap.keySet()) {
+                for (DepNode d : smallMap.get(a).getChild()) {
+                    ASTNode c = d.getStmt();
+                    int cntA = subGraphCount.get(a);
+                    int cntC = subGraphCount.get(c);
+                    if (cntA != cntC) {
+                        int v = Math.min(cntA, cntC);
+                        changeSet = true;
+                        if (v == cntA) {
+                            subGraphCount.put(c, v);
+                            updateParentNode(c, smallMap, subGraphCount, v);
+                        } else {
+                            subGraphCount.put(a, v);
+                            updateParentNode(a, smallMap, subGraphCount, v);
+                        }
                     }
                 }
             }
-        }
+        }while(changeSet);
+
 
         for(ASTNode a : subGraphCount.keySet()){
             int label = subGraphCount.get(a);
@@ -211,6 +239,17 @@ public class TopologicalSort {
                 Map<ASTNode, DepNode> two = subGraphClass.get(label);
                 two.put(a, smallMap.get(a));
                 subGraphClass.put(label, two);
+            }
+        }
+
+        if(debug) {
+            PrintMessage.See("Print group information:");
+            for (int label : subGraphClass.keySet()) {
+                PrintMessage.See("class " + label, "print");
+                for (ASTNode a : subGraphClass.get(label).keySet()) {
+                    PrintMessage.See(a.getPrettyPrinted().trim(), "ASTNode");
+                }
+                PrintMessage.delimiter();
             }
         }
 
@@ -232,6 +271,7 @@ public class TopologicalSort {
             int numD = subGraphCount.get(p1);
             if(numD > v){
                 subGraphCount.put(p1, v);
+                updateParentNode(p1,smallMap,subGraphCount,v); // update all
             }
         }
     }

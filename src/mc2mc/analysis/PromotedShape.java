@@ -8,9 +8,13 @@ import natlab.tame.valueanalysis.components.shape.Shape;
  */
 public class PromotedShape {
     int shape;
-    int loc;         // promoted dim (location)
+    // pKind = 0;
     RangeExpr rExpr; // promoted value
-    Shape oldShape;  // old shape before promoted
+    // pKind = 1;
+    Shape oldShape;  // old shape before promoted (or N)
+    int loc, dim;         // promoted dim (location)
+
+    int pKind = 0;
 
     int shapeB = 0; //bottom
     int shapeS = 1; //scalar
@@ -19,11 +23,25 @@ public class PromotedShape {
     int shapeT = 4; //top
 
     public PromotedShape(PromotedShape p1){
-        shape = p1.getShape(); //more range
+        copyPS(p1);
     }
 
-    public PromotedShape(int s){
-        shape = s;
+    public void copyPS(PromotedShape p1){
+        shape = p1.getShape(); //more range
+        if(shape == shapeP){
+            pKind = p1.getPKind();
+            if(pKind == 0) {
+                rExpr = p1.getRange();
+            }
+            else{
+                loc = p1.getLoc();
+                dim = p1.getDim();
+                oldShape = p1.getOldShape();
+            }
+        }
+        else if(shape == shapeN){
+            oldShape = p1.getOldShape();
+        }
     }
 
     public PromotedShape() {
@@ -38,26 +56,33 @@ public class PromotedShape {
         shape = shapeS;
     }
 
-    public void setN(){
+    public void setN(Shape s){
         shape = shapeN;
+        oldShape = s;
     }
 
-    public void setP(RangeExpr r, int location){
-        shape = shapeP;
-        rExpr = r;
-        loc   = location;
+    public void setP(Shape s, int location, int dimension){
+        shape    = shapeP;
+        oldShape = s;
+        loc      = location;
+        dim      = dimension;
+        pKind    = 1;
     }
 
-    public void setP(PromotedShape p1, int location){
+//    public void setP(PromotedShape p1, int location){
+//        setP(p1.getOldShape(), location);
+//    }
+
+    public void setP(RangeExpr re){
         shape = shapeP;
-        // todo: update shape with given p1
-        loc = location;
-        setOldShape(p1.getOldShape());
+        rExpr = re;
+        pKind = 0;
     }
 
     public void setP(PromotedShape p1){
-        shape = shapeP;
+//        shape = shapeP;
         // more Range
+        copyPS(p1);
     }
 
     public void setT(){
@@ -92,13 +117,60 @@ public class PromotedShape {
     public Shape getOldShape() { return oldShape; }
     public void setOldShape(Shape p) { oldShape = p; }
 
+    public boolean acceptArraySet(PromotedShape p1){
+        if(shape == p1.getShape() && shape == shapeP){
+            if(pKind == p1.getPKind()){
+                if(pKind == 1) {
+                    if(oldShape.equals(p1.getOldShape())){
+                        if(loc == p1.getLoc())
+                            return true;
+                        else {
+                            return oldShape.isScalar();
+                        }
+                    }
+                    else {
+                        return false;
+                    }
+//                    return (oldShape.equals(p1.getOldShape()) && loc == p1.getLoc());
+                }
+            }
+            else if(pKind==0 && p1.getPKind()==1){
+                return true;
+            }
+        }
+        return false;
+    }
 
     // compare
     public boolean equals(PromotedShape p1){
         if(shape == p1.getShape()){
-//            if(shape == shapeP){ // check P
-//                return dimv.equals(p1.getDim());
-//            }
+            if(shape == shapeP){ // check P
+                if(pKind!=p1.getPKind()){
+                    return false;
+                }
+                else if(pKind == 0){
+                    return rExpr.equals(p1.getRange());
+                }
+                else if(dim != p1.getDim()){
+                    if(dim==1 && loc == 0 && p1.getDim()==2 && p1.getLoc()==1){
+                        return oldShape.equals(p1.getOldShape());
+                    }
+                    else if(dim==2 && loc == 1 && p1.getDim()==1 && p1.getLoc() == 0){
+                        return oldShape.equals(p1.getOldShape());
+                    }
+                    return false;
+                }
+                else {
+                    if(oldShape == null || p1.getOldShape() == null){
+                        int xx = 10;
+                    }
+                    return oldShape.equals(p1.getOldShape()) && loc == p1.getLoc();
+                }
+//                return (pKind!=p1.getPKind()?false:pKind==0?rExpr.equals(p1.getRange()):(oldShape.equals(p1.getOldShape())&&loc==p1.getLoc()));
+            }
+            else if(shape == shapeN){
+                return oldShape.equals(p1.getOldShape());
+            }
             return true;
         }
         return false;
@@ -117,5 +189,20 @@ public class PromotedShape {
         return str + sp + "]";
     }
 
+    public int getPKind(){
+        return pKind;
+    }
+
+    public RangeExpr getRange(){
+        return rExpr;
+    }
+
+    public int getLoc(){
+        return loc;
+    }
+
+    public int getDim() {
+        return dim;
+    }
 
 }

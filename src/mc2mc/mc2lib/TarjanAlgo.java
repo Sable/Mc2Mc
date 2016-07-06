@@ -65,8 +65,14 @@ public class TarjanAlgo {
         number.put(a, label);
         lowerLink.put(a, label);
         localStack.add(a);
+        if(localStmtMap.get(a) == null){
+            int xx = 10;
+        }
         for(DepNode d : localStmtMap.get(a).getChild()){
             ASTNode dStmt = d.getStmt();
+            if(number.get(dStmt) == null){
+                int xx = 10;
+            }
             if(number.get(dStmt)==0){
                 findCycle(dStmt);
                 lowerLink.put(a, Math.min(lowerLink.get(a), lowerLink.get(dStmt)));
