@@ -64,8 +64,10 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
         return stmtHashMap;
     }
 
-    /*
-     See the example in the folder: in/test_loop.m
+    /**
+     * Find the innermost loop
+     *
+     * Example: in/test_loop.m
     */
     private int findInnerFor(ASTNode node) {
         int len = node.getNumChild();
