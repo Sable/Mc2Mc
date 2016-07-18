@@ -26,9 +26,9 @@ public class TirAnalysisDep {
     public static boolean debug = false;
 
     public TirAnalysisDep(AnalysisEngine engine, ASTNode node){
-        PrintMessage.delimiter();
-        PrintMessage.See("Entering data dependence analysis");
-        PrintMessage.delimiter();
+//        PrintMessage.delimiter();
+//        PrintMessage.See("Entering data dependence analysis");
+//        PrintMessage.delimiter();
         localEngine = engine;
         localUDMap = engine.getUDChainAnalysis().getChain();
         localDUMap = engine.getDUChainAnalysis().getChain();
@@ -88,20 +88,6 @@ public class TirAnalysisDep {
         if(debug)
             PrintMessage.See("processing: " + node.getPrettyPrinted().trim());
         findFlowDep(node);
-//        Map<String, Set<TIRNode>> useSet = localUDMap.get(node);
-//        HashMap<String, HashSet<TIRNode>> useSet = localDUMap.get(node);
-//        if(useSet==null){
-//            PrintMessage.See("\t[null]");
-//        }
-//        else {
-//            for (String var : useSet.keySet()) {
-//                if(isLoop && var.equals(iterator)) continue;
-//                PrintMessage.See("\t[def] " + var);
-//                for (TIRNode t : useSet.get(var)) {
-//                    PrintMessage.See("\t[use] " + ((ASTNode) t).getPrettyPrinted().trim() + " //" + stmtMap.containsKey(t));
-//                }
-//            }
-//        }
     }
 
     private void findFlowDep(ASTNode node){
