@@ -123,16 +123,16 @@ public class TirAnalysis {
                 PrintMessage.See(funcanalysis.getResult().toString());
             }
             AnalysisEngine engine = AnalysisEngine.forAST(tirfunc);
-
             Map<ASTNode, ValueFlowMap<AggrValue<BasicMatrixValue>>> funcValueMap =
                     funcanalysis.getOutFlowSets();
+            String currentFuncName = tirfunc.getName().getID();
 
+            // BIF replacement (e.g. mtimes -> times)
             RenameSpecialName rs = new RenameSpecialName(funcValueMap.get(tirfunc));
             tirfunc.analyze(rs); // rename mtimes and mrdivde
             CommonFunction.getNumofRename(rs.getNumofRenamed());
 
-            String currentFuncName = tirfunc.getName().getID();
-            PrintMessage.See("** [Phase 1] Run loop analysis **", currentFuncName);
+            // Loop vectorization
             TirAnalysisLoop tirLoop = new TirAnalysisLoop(engine, funcValueMap, currentFuncName);
             tirfunc.analyze(tirLoop);
             List<String> newFn = null;
