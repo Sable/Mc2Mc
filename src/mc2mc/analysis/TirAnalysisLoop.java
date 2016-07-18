@@ -78,6 +78,7 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
             numberFor += findInnerFor(t);
         }
         if(isFor && numberFor == 1 && innermostLoop(node)) {
+            PrintMessage.delimiter();
             PrintMessage.See("Getting outFlow", "AnalysisLoop");
             TirAnalysisPropagateShape tirPS = new TirAnalysisPropagateShape(node, fValueMap);
             tirPS.analyze();

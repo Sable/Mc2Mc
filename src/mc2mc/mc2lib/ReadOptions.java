@@ -28,18 +28,6 @@ public class ReadOptions {
     @Parameter(names = {"-noplus"}, description = "Vectorized TameIR")
     public boolean isNoPlus = false;
 
-//    @Parameter(names={"-p","--display"}, description = "list all optimizations")
-//    public boolean isOptDisplay = false;
-
-//    @Parameter(names={"-a","--all"}, description = "Enable all optimizations")
-//    public boolean isAll = true;
-//
-//    @Parameter(names={"-e","--enable"}, arity = 1, description = "Enable an optimization")
-//    public boolean optEnable = true;
-//
-//    @Parameter(names={"-d","--disable"}, arity = 1, description = "Disable all optimization")
-//    public boolean optDisable = false;
-
     @Parameter(names={"-v","--view"}, description = "Tamer viewer")
     public boolean isOptViewer = false;
 

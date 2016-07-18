@@ -18,6 +18,7 @@ public class TamerPrint {
     public Map<TIRNode, HashMap<String, HashSet<TIRNode>>> localDUMap = null;
     public ASTNode root = null;
     public Map<ASTNode, Map<String, String>> localMap2 = null;
+    public static boolean debug = false;
 
     public TamerPrint(AnalysisEngine engine, TIRFunction node){
         localUDMap = engine.getUDChainAnalysis().getChain();
@@ -96,7 +97,7 @@ public class TamerPrint {
 
     public void processBlocks(){
         getBlock(); // initalize
-        PrintMessage.See("block size = " + basicBlock.size());
+//        PrintMessage.See("block size = " + basicBlock.size());
         map2String = new HashMap<>();
         mapped = new HashSet<>();
         localMap2 = new HashMap<>();
@@ -144,11 +145,13 @@ public class TamerPrint {
             }
         }
 
-        PrintMessage.See("Update map2String:");
-        int k = 0;
-        for(ASTNode a : map2String.keySet()){
-            PrintMessage.See(a.getPrettyPrinted().trim() + " -> " + map2String.get(a), k +","+mapped.contains(a));
-            k++;
+        if(debug) {
+            PrintMessage.See("Update map2String:");
+            int k = 0;
+            for (ASTNode a : map2String.keySet()) {
+                PrintMessage.See(a.getPrettyPrinted().trim() + " -> " + map2String.get(a), k + "," + mapped.contains(a));
+                k++;
+            }
         }
     }
 

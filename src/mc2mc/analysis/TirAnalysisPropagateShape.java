@@ -86,7 +86,7 @@ public class TirAnalysisPropagateShape extends TIRAbstractSimpleStructuralForwar
     @Override
     public Map<String, PromotedShape> merge(Map<String, PromotedShape> p1, Map<String, PromotedShape> p2) {
         Map<String, PromotedShape> res = new HashMap<>(p1);
-        PrintMessage.See(" In function? " + (isFunction ? "yes" : "no"));
+//        PrintMessage.See(" In function? " + (isFunction ? "yes" : "no"));
         for (String name : p2.keySet()) {
             if (p1.containsKey(name)) {
                 PromotedShape ps = BuildinList.mergeTwo(p1.get(name), p2.get(name));
@@ -102,7 +102,7 @@ public class TirAnalysisPropagateShape extends TIRAbstractSimpleStructuralForwar
             }
             else res.put(name, p2.get(name));
         }
-        PrintMessage.See("size of set: " + res.size());
+//        PrintMessage.See("size of set: " + res.size());
         return res;
     }
 

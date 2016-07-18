@@ -106,9 +106,6 @@ public class TirAnalysisDep {
             if(e instanceof NameExpr || e instanceof MatrixExpr){ // e.g. a
                 Set<String> writeString = ((AssignStmt)node).getLValues();
                 for(String lhsName : writeString) {
-                    if (lhsName.equals("q")) {
-                        int xx = 10;
-                    }
                     if (useSet.get(lhsName) == null) {
                         PrintMessage.See("[null node] " + node.getPrettyPrinted().trim());
                     } else {
@@ -155,7 +152,8 @@ public class TirAnalysisDep {
                                     if(!stmtBool.containsKey(t))
                                         continue; // if not in the current loop, skip
                                     boolean before = stmtBool.get(t);
-                                    PrintMessage.See("[related] " + before + " - " + ((ASTNode)t).getPrettyPrinted().trim());
+                                    if(debug)
+                                        PrintMessage.See("[related] " + before + " - " + ((ASTNode)t).getPrettyPrinted().trim());
                                     ArrayList<NumValue> useList =
                                             processArrayIndexing((ParameterizedExpr)((TIRArrayGetStmt)t).getRHS(), localUDMap.get(t), iterator);
                                     if(defList.size()==useList.size()){
@@ -237,7 +235,7 @@ public class TirAnalysisDep {
                                                 depUse.setChild(depDef, kind); //anti
                                             }
                                         }
-                                        PrintMessage.See("isDep " + isDep);
+//                                        PrintMessage.See("isDep " + isDep);
                                     }
                                 }
                             }
@@ -480,7 +478,8 @@ public class TirAnalysisDep {
     }
 
     public boolean gcdTest(int a1, int b1, int a2, int b2){
-        PrintMessage.See(" (" + a1 + "," + b1 + "," + a2 + "," + b2 + ")");
+        if(debug)
+            PrintMessage.See(" (" + a1 + "," + b1 + "," + a2 + "," + b2 + ")");
         if(a1 < 1 || a2 < 1) return true; //avoid it
         return ((b2-b1)%(myGCD(a1,a2))==0);
     }
