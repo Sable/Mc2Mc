@@ -22,6 +22,12 @@ public class ReadOptions {
     @Parameter(names = {"-tir"}, description = "Output tameIR")
     public boolean isTameIR = false;
 
+    @Parameter(names = {"-plus"}, description = "TamePlus with check (default)")
+    public boolean isPlus = false;
+
+    @Parameter(names = {"-noplus"}, description = "Vectorized TameIR")
+    public boolean isNoPlus = false;
+
 //    @Parameter(names={"-p","--display"}, description = "list all optimizations")
 //    public boolean isOptDisplay = false;
 

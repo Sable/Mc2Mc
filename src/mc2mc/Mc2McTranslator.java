@@ -12,6 +12,7 @@ public class Mc2McTranslator {
         // constructor
     }
 
+    // Main function
     public static void main(String[] args) {
         if(args.length == 0){
             PrintMessage.Error("No options given\\nTry --help for usage");
@@ -44,9 +45,10 @@ public class Mc2McTranslator {
         String outDir = options.outDir;
         int cnt = 0;
         boolean isTameIR = options.isTameIR; //output TameIR
+        int writeOp = (options.isNoPlus?1:2);
         while(true) {
             PrintMessage.See(cnt+"", "Round");
-            TirAnalysis tira = new TirAnalysis(mainFile, parameters, outDir);
+            TirAnalysis tira = new TirAnalysis(mainFile, parameters, outDir, writeOp);
             if(options.isOptViewer){
                 tira.RunTamerViewer();
                 break;
