@@ -23,6 +23,8 @@ public class Mc2McTranslator {
         JCommander jcommander = new JCommander(options, args);
         jcommander.setProgramName("Mc2Mc");
 
+        runOptions(options, jcommander);
+
         PrintMessage.welcomeWords();
         if(options.isOptViewer){
 
@@ -38,8 +40,6 @@ public class Mc2McTranslator {
 
         String[] parameters = options.arguments.split(" ");
         PrintMessage.arrayList(parameters, "Option information");
-
-        runOptions(options, jcommander);
 
         String mainFile = options.inputArgs.get(0);
         String outDir = options.outDir;
