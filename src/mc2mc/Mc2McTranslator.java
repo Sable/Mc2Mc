@@ -40,12 +40,10 @@ public class Mc2McTranslator {
 
         runOptions(options, jcommander);
 
-//        int argSize =args.length;
-//        String[] parameters = options.arguments.subList(1,argSize).toArray(new String[0]);
         String mainFile = options.inputArgs.get(0);
         String outDir = options.outDir;
         int cnt = 0;
-        boolean isTameIR = false;
+        boolean isTameIR = options.isTameIR; //output TameIR
         while(true) {
             PrintMessage.See(cnt+"", "Round");
             TirAnalysis tira = new TirAnalysis(mainFile, parameters, outDir);
@@ -58,7 +56,6 @@ public class Mc2McTranslator {
                 if (tira.getNoChange()) break;
                 mainFile = tira.getOutPath();
             }
-//            if(cnt == 0) break;
             cnt++;
         }
 
@@ -68,9 +65,6 @@ public class Mc2McTranslator {
             PrintMessage.See("No vectorization");
         }
         else PrintMessage.See("Exit successfully with " + numOfChanges + " changes.");
-        //tira.TestTirFunction();
-        //tira.TirValueAnalysis();
-        //tira.TestLocalAnalysis();
     }
 
     public static void runOptions(ReadOptions opt, JCommander jc){
@@ -78,13 +72,6 @@ public class Mc2McTranslator {
             jc.usage();
             System.exit(0);
         }
-
-//        if(opt.isOptDisplay){
-//            PrintMessage.See("Optimization options:\n\n" +
-//                    "1) If conversion\n" +
-//                    "2) Function vectorization");
-//            System.exit(0);
-//        }
     }
 
 }

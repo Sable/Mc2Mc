@@ -10,14 +10,17 @@ import java.util.List;
 @Parameters(separators = "=")
 public class ReadOptions {
 
-    @Parameter(names={"-h","--help"}, description = "list all commands")
+    @Parameter(names={"-h","--help"}, description = "List all commands")
     public boolean isHelp = false;
 
-    @Parameter(names={"-args"}, description = "list all optimizations")
+    @Parameter(names={"-args"}, description = "List all optimizations")
     public String arguments = ""; // pass program parameters to McLabCore
 
-    @Parameter(names = {"-out"}, description = "output directory")
+    @Parameter(names = {"-out"}, description = "Output directory")
     public String outDir = "";
+
+    @Parameter(names = {"-tir"}, description = "Output tameIR")
+    public boolean isTameIR = false;
 
 //    @Parameter(names={"-p","--display"}, description = "list all optimizations")
 //    public boolean isOptDisplay = false;
