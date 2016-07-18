@@ -125,7 +125,12 @@ public class PromotedShape {
                         if(loc == p1.getLoc())
                             return true;
                         else {
-                            return oldShape.isScalar();
+                            if(dim==1 && oldShape.isScalar()) // rtnR(i, k) = resR(k);
+                                return true;
+                            else if(dim==2 && oldShape.isScalar() && p1.getDim()==1) // sampleOut(k) = x(i,k) or x(k, i)
+                                return true;
+                            return false; // dimension doesn't agree
+//                            return oldShape.isScalar();
                         }
                     }
                     else {
@@ -138,7 +143,52 @@ public class PromotedShape {
                 return true;
             }
         }
+        else if(shape == shapeS && p1.getShape()==shapeP){
+            // P <- S
+            return true;
+        }
         return false;
+    }
+
+    // return the index of which var should be transposed
+    public int acceptDimTransp(PromotedShape p1){
+        if(shape==shapeP && p1.getShape()==shapeP){
+            // 1:n is always ok
+            if(pKind==0 && p1.getPKind()==1 && p1.getOldShape().isScalar())
+                return 2;
+            else if(p1.getPKind()==0 && pKind==1 &&  oldShape.isScalar())
+                return 1;
+            else if(pKind==p1.getPKind() && pKind==1) {
+                if (oldShape.isScalar() && p1.getOldShape().isScalar()) {
+                    if (dim == 1 && p1.getDim() == 2 && p1.getLoc() == 0) {
+                        return 2;
+                    } else if (dim == 2 && loc == 0 && p1.getDim() == 1) {
+                        return 1;
+                    } else {
+                        return (loc == 0 ? 1 : 2);
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+
+    public boolean acceptArrayTransp(PromotedShape p1){
+        if(shape == p1.getShape() && shape==shapeP){
+            if(pKind == p1.getPKind() && pKind==1){
+                if(dim==p1.getDim() && dim==2){
+                    if(loc != p1.getLoc())
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public void changeLoc(int n){
+        if(pKind==1) {
+            loc = n;
+        }
     }
 
     // compare

@@ -74,6 +74,30 @@ public class TirAnalysis {
         System.out.println(localAnalysis.toString());
     }
 
+    public void runAnalysis(boolean isTameIR){
+        if(isTameIR)
+            writeTameIR();
+        else
+            runAnalysis();
+    }
+
+    public void writeTameIR(){
+        mainFuncName = localAnalysis.getFunctionCollection().getMain().getName();
+        String outPath = getOutPath();
+        List<String> resultList = new ArrayList<>();
+        resultList.add("main");
+        for (StaticFunction f : localAnalysis.getFunctionCollection().getAllFunctions()) {
+            String fnString = f.getAst().getPrettyPrinted();
+            if (f.getName().equals(mainFuncName)) { //main function
+                resultList.set(0, fnString);
+            } else {
+                resultList.add(fnString);
+            }
+        }
+        CommonFunction.save2File(resultList, outPath); //save to a final file
+        PrintMessage.See("Wrote to a final file");
+    }
+
 //    public void RunLoopInvariant(){
     public void runAnalysis() {
         int op = 2;
@@ -97,7 +121,7 @@ public class TirAnalysis {
                     localAnalysis.getNodeList().get(i).getAnalysis();
             TIRFunction tirfunc = funcanalysis.getTree();
 
-            List<String> oldFn = CommonFunction.transformFunction(tirfunc, null, 2);
+            List<String> oldFn = CommonFunction.transformFunction(tirfunc, null, null, 2);
 
             if (printFunc) {
                 PrintMessage.See(tirfunc.getPrettyPrinted());
@@ -140,8 +164,9 @@ public class TirAnalysis {
                 tirfunc.analyze(new TirAnalysisSubExprPrint(tirsub));
             } else if (op == 2) {
 
-                RenameSpecialName rs = new RenameSpecialName(funcValueMap.get(tirfunc));
-                tirfunc.analyze(rs); // rename mtimes and mrdivde
+                    RenameSpecialName rs = new RenameSpecialName(funcValueMap.get(tirfunc));
+                    tirfunc.analyze(rs); // rename mtimes and mrdivde
+                    CommonFunction.getNumofRename(rs.getNumofRenamed());
 
                 String currentFuncName = tirfunc.getName().getID();
                 PrintMessage.See("** [Phase 1] Run loop analysis **", currentFuncName);
@@ -155,7 +180,7 @@ public class TirAnalysis {
                     for(ASTNode a : tirLoop.getStmtHashMap().keySet()){
                         PrintMessage.See(a.getPrettyPrinted(), "stmt map");
                     }
-                    newFn = CommonFunction.transformFunction(tirfunc, tirLoop.getStmtHashMap(), 2);
+                    newFn = CommonFunction.transformFunction(tirfunc, tirLoop.getStmtHashMap(), null, 2);
                 }
                 else {
                     newFn = CommonFunction.getFnHashMap().get(tirfunc);
@@ -193,7 +218,9 @@ public class TirAnalysis {
                 flatString = flatListString(newFn);
             }
             else{
-                List<String> oldFn = CommonFunction.transformFunction(tirfunc, null, 2);
+                List<String> oldFn = CommonFunction.transformFunction(tirfunc, null, null, 2);
+//                List<String> oldFn = new ArrayList<>();
+//                Collections.addAll(oldFn, tirfunc.getPrettyPrinted().split("\\\n"));
                 flatString = flatListString(oldFn);
             }
 
@@ -232,19 +259,30 @@ public class TirAnalysis {
             else if(writeOp==2) {
                 List<String> finalFn = new ArrayList<>();
                 finalFn.add("main");
+                boolean flagCheck = false; // plus-no (false) or plus (true)
+                Map<ASTNode, String> checkMap;
                 for (int i = 0; i < localAnalysis.getNodeList().size(); i++) {
                     IntraproceduralValueAnalysis<AggrValue<BasicMatrixValue>> funcanalysis =
                             localAnalysis.getNodeList().get(i).getAnalysis();
                     TIRFunction tirfunc = funcanalysis.getTree();
                     AnalysisEngine engine = AnalysisEngine.forAST(tirfunc);
 
-                    TirAnalysisTrick tirTrick = new TirAnalysisTrick(engine);
-                    tirfunc.analyze(tirTrick);
+
+                    if(flagCheck) {
+                        Map<ASTNode, ValueFlowMap<AggrValue<BasicMatrixValue>>> funcValueMap =
+                                funcanalysis.getOutFlowSets();
+                        TirAnalysisCheck tirCheck = new TirAnalysisCheck(engine, funcValueMap);
+                        tirfunc.analyze(tirCheck);
+                        checkMap = tirCheck.trickMap;
+                    }
+                    else {
+                        checkMap = new HashMap<>();
+                    }
 
                     TamerPrint tp = new TamerPrint(engine, tirfunc);
                     tp.processBlocks();
 //                    tp.printBlocks();
-                    List<String> oneFn = CommonFunction.transformFunction(tirfunc, tp.getMap2String(), tp.getMapped(), tirTrick.trickMap);
+                    List<String> oneFn = CommonFunction.transformFunction(tirfunc, tp.getMap2String(), tp.getMapped(), checkMap);
                     String fnString = flatListString(oneFn);
                     if (tirfunc.getName().getID().equals(mainFuncName)) { //main function
                         finalFn.set(0, fnString);
@@ -256,7 +294,7 @@ public class TirAnalysis {
                 CommonFunction.save2File(finalFn, outPath); //save to a final file
                 PrintMessage.See("Wrote to a final file");
             }
-            else {
+            else { //TameIR with checks
                 List<String> finalFn = new ArrayList<>();
                 finalFn.add("main");
                 for (int i = 0; i < localAnalysis.getNodeList().size(); i++) {
@@ -265,12 +303,14 @@ public class TirAnalysis {
                     TIRFunction tirfunc = funcanalysis.getTree();
                     AnalysisEngine engine = AnalysisEngine.forAST(tirfunc);
 
-                    TirAnalysisTrick tirTrick = new TirAnalysisTrick(engine);
-                    tirfunc.analyze(tirTrick);
+                    Map<ASTNode, ValueFlowMap<AggrValue<BasicMatrixValue>>> funcValueMap =
+                            funcanalysis.getOutFlowSets();
+                    TirAnalysisCheck tirCheck = new TirAnalysisCheck(engine, funcValueMap);
+                    tirfunc.analyze(tirCheck);
 //                    tirTrick.printTrickMap();
 
 
-                    List<String> oneFn = CommonFunction.transformFunction(tirfunc, tirTrick.trickMap);
+                    List<String> oneFn = CommonFunction.transformFunction(tirfunc, tirCheck.trickMap);
                     String fnString = flatListString(oneFn);
                     if (tirfunc.getName().getID().equals(mainFuncName)) { //main function
                         finalFn.set(0, fnString);
@@ -287,6 +327,9 @@ public class TirAnalysis {
             CommonFunction.save2File(newProgram, outPath);
             PrintMessage.See("Wrote to a temp file");
         }
+
+        // count how many changes occur
+        CommonFunction.setNumofChanges();
 
     }
 

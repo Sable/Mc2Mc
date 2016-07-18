@@ -24,6 +24,42 @@ public class CommonFunction {
     private static String mainFile = "";
     private static String tempFile = "";
     private static Stack<String> runtimeStack = null;
+    private static int numOfChanges = 0;
+    private static List<String> changeList = new ArrayList<>();
+    public static Map<String, Integer> numofRename = new HashMap<>();
+
+    public static void getNumofRename(Map<String, Integer> one){
+        for(String s:one.keySet()){
+            if(numofRename.containsKey(s)){
+                numofRename.put(s, numofRename.get(s) + one.get(s));
+            }
+            else {
+                numofRename.put(s, one.get(s));
+            }
+        }
+    }
+
+    public static void printRename(){
+        PrintMessage.See("Renamed set:");
+        for(String s : numofRename.keySet()){
+            PrintMessage.See(s + " : " + numofRename.get(s));
+        }
+    }
+
+    public static void setNumofChanges(){
+        numOfChanges += getFnHashMap().size();
+        for(ASTNode a : getFnHashMap().keySet()){
+            changeList.add(a.getPrettyPrinted().trim());
+        }
+    }
+
+    public static int getNumOfChanges(){
+//        int n  = 0;
+//        for(String s : changeList){
+//            PrintMessage.See(n + ". []  " + s);
+//        }
+        return numOfChanges;
+    }
 
     public static void initFnHashMap(){
         fnHashMap = new HashMap<>();
@@ -201,7 +237,10 @@ public class CommonFunction {
     }
 
     //
-    public static List<String> transformFunction(ASTNode node, Map<ASTNode, List<String>> stmtHashMap, int op){
+    public static List<String> transformFunction(ASTNode node,
+                                                 Map<ASTNode, List<String>> stmtHashMap,
+                                                 Map<ASTNode, String> transposeMap,
+                                                 int op){
         List<String> rtn = new ArrayList<>();
         if(node instanceof TIRFunction) {
             String inputP = genParameterList(((TIRFunction) node).getInputParamList());
@@ -211,7 +250,7 @@ public class CommonFunction {
                     + ((TIRFunction) node).getName().getID()
                     +"(" + inputP + ")");
             for (Stmt s : ((TIRFunction)node).getStmtList()) {
-                rtn.addAll(transformFunction(s, stmtHashMap, op));
+                rtn.addAll(transformFunction(s, stmtHashMap, transposeMap, op));
             }
             rtn.add("end");
         }
@@ -231,39 +270,38 @@ public class CommonFunction {
 //                str = node.getPrettyPrinted();
 //            rtn.add(str.trim());
 //        }
-        else if(op == 1 && node instanceof TIRIfStmt){
+        else if(node instanceof TIRIfStmt) {
             Map<ASTNode, List<String>> newIfStmt = stmtHashMap;
-            if(newIfStmt.containsKey(node)){
+            if (op==1 && newIfStmt.containsKey(node)) {
                 rtn.addAll(newIfStmt.get(node));
-            }
-            else {
+            } else {
                 rtn.add("if " + ((TIRIfStmt) node).getConditionVarName().getID());
                 for (Stmt s : ((TIRIfStmt) node).getIfStatements()) {
-                    rtn.addAll(transformFunction(s, newIfStmt, op));
+                    rtn.addAll(transformFunction(s, newIfStmt, transposeMap, op));
                 }
                 rtn.add("else");
-                if(((TIRIfStmt) node).hasElseBlock()){
-                    for(Stmt s : ((TIRIfStmt) node).getElseStatements()){
-                        rtn.addAll(transformFunction(s, newIfStmt, op));
+                if (((TIRIfStmt) node).hasElseBlock()) {
+                    for (Stmt s : ((TIRIfStmt) node).getElseStatements()) {
+                        rtn.addAll(transformFunction(s, newIfStmt, transposeMap, op));
                     }
                 }
                 rtn.add("end");
             }
         }
-        else if(op == 2 && node instanceof TIRForStmt){
-            if(stmtHashMap!=null && stmtHashMap.containsKey(node)){
+        else if(node instanceof TIRForStmt){
+            if(op==2 && stmtHashMap!=null && stmtHashMap.containsKey(node)){
                 rtn.addAll(stmtHashMap.get(node));
             }
             else {
                 rtn.add("for " + ((TIRForStmt) node).getAssignStmt().getPrettyPrinted().trim());
                 for(Stmt s : ((TIRForStmt) node).getStatements()){
-                    rtn.addAll(transformFunction(s, stmtHashMap, op));
+                    rtn.addAll(transformFunction(s, stmtHashMap, transposeMap, op));
                 }
                 rtn.add("end");
             }
-        }
+        } // while and so on ?
         else {
-            String[] mutipleLine = node.getPrettyPrinted().trim().split("\\\n");
+            String[] mutipleLine = (transposeMap!=null && transposeMap.containsKey(node)?transposeMap.get(node):node.getPrettyPrinted()).trim().split("\\\n");
             for(String line : mutipleLine) {
                 rtn.add(line.trim());
             }

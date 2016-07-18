@@ -21,6 +21,7 @@ public class RenameSpecialName extends TIRAbstractNodeCaseHandler {
 
     ValueFlowMap<AggrValue<BasicMatrixValue>> localValueMap;
     private Map<String, String> changeList;
+    private Map<String, Integer> numofRenamed = null;
 
     public RenameSpecialName(ValueFlowMap<AggrValue<BasicMatrixValue>> valueMap){
         localValueMap = valueMap;
@@ -28,6 +29,7 @@ public class RenameSpecialName extends TIRAbstractNodeCaseHandler {
         changeList.put("mtimes", "times");
         changeList.put("mrdivide", "rdivide");
         changeList.put("mpower", "power");
+        numofRenamed = new HashMap<>();
     }
 
     @Override
@@ -70,6 +72,12 @@ public class RenameSpecialName extends TIRAbstractNodeCaseHandler {
             }
             if(fid) {
                 node.getFunctionName().setID(changeList.get(op));
+                if(numofRenamed.containsKey(op)) {
+                    numofRenamed.put(op, numofRenamed.get(op) + 1);
+                }
+                else{
+                    numofRenamed.put(op, 1);
+                }
             }
         }
     }
@@ -82,6 +90,14 @@ public class RenameSpecialName extends TIRAbstractNodeCaseHandler {
             }
         }
         return false;
+    }
+
+    public Map<String, Integer> getNumofRenamed(){
+//        PrintMessage.See("Changed set:");
+//        for(String s : numofRenamed.keySet()){
+//            PrintMessage.See(s + " : " + numofRenamed.get(s));
+//        }
+        return numofRenamed;
     }
 
 }

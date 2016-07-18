@@ -138,7 +138,7 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
 //            collectRW((TIRForStmt)node);
 //            buildDepGraph((TIRForStmt)node);
 //            processStmt((TIRForStmt) node, fValueMap.get(node));
-            if(currentFuncName.equals("crnich")){
+            if(currentFuncName.equals("fftSimple")){
                 int xx = 10;
             }
             PrintMessage.See("Getting outFlow", "AnalysisLoop");
@@ -147,6 +147,7 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
             if(debug)
                 node.analyze(new TirAnalysisLoopPrint(tirPS));
             Map<ASTNode, Map<String, PromotedShape>> outFlow = tirPS.getOutFlowSets();
+            Map<ASTNode, String> transposeMap = tirPS.transposeMap;
             PrintMessage.See("Getting depGraph", "AnalysisLoop");
             TirAnalysisDep tirDep = new TirAnalysisDep(localEngine, node);
             tirDep.run();
@@ -155,7 +156,7 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
             if(currentFuncName.equals("crnich")){
                 int xx = 10;
             }
-            java.util.List<String> newFor = vectorizeFor(node, outFlow, depGraph);
+            java.util.List<String> newFor = vectorizeFor(node, outFlow, depGraph, transposeMap);
             stmtHashMap.put(node, newFor);
         }
         return numberFor;
@@ -163,7 +164,8 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
 
     private java.util.List<String> vectorizeFor(ASTNode iFor,
                                              Map<ASTNode, Map<String, PromotedShape>> outFlow,
-                                             Map<ASTNode, DepNode> depGraph){
+                                             Map<ASTNode, DepNode> depGraph,
+                                             Map<ASTNode, String>transposeMap){
         TIRForStmt tfor = (TIRForStmt)iFor;
         String iterator = tfor.getLoopVarName().getID();
         String colonExpr= tfor.getAssignStmt().getRHS().getPrettyPrinted();
@@ -211,7 +213,7 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
                             if(tSort.matchIdiom1(group, null, null)) {
                                 java.util.List<String> remainedString = new ArrayList<>();
                                 tSort.matchIdiom1(group, modifiedMap, remainedString);
-                                addVectorizableGroup(outString, group, modifiedMap);
+                                addVectorizableGroup(outString, group, modifiedMap, transposeMap);
                                 for (String s : remainedString) {
                                     outString.add(s);
                                 }
@@ -240,7 +242,7 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
         for(Map<ASTNode, DepNode> group : hasCyclicMap.keySet()){
             if(!hasCyclicMap.get(group) && nodeFlag.get(group)){
                 // is acyclic
-                addVectorizableGroup(outString, group, null);
+                addVectorizableGroup(outString, group, null, transposeMap);
             }
         }
         // generate code
@@ -264,14 +266,23 @@ public class TirAnalysisLoop extends TIRAbstractNodeCaseHandler {
 
     public void addVectorizableGroup(java.util.List<String> outString,
                                      Map<ASTNode, DepNode> group,
-                                     Map<ASTNode, String> modifiedMap){
+                                     Map<ASTNode, String> modifiedMap,
+                                     Map<ASTNode, String> transposeMap){
         TopologicalSort ts = new TopologicalSort(group);
         java.util.List<ASTNode> sortedList = ts.sort();
         for(ASTNode a : sortedList){
             if(modifiedMap!=null && modifiedMap.containsKey(a))
                 outString.add(modifiedMap.get(a));
-            else
-                outString.add(vectorizeStmt(a));
+            else {
+                if(transposeMap.containsKey(a)){
+                    for(String s : transposeMap.get(a).split("\\\n")){
+                        outString.add(s);
+                    }
+                }
+                else {
+                    outString.add(vectorizeStmt(a));
+                }
+            }
         }
 //        outStmts.addAll(sortedList);
     }

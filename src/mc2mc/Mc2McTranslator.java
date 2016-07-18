@@ -2,6 +2,7 @@ package mc2mc;
 
 import com.beust.jcommander.JCommander;
 import mc2mc.analysis.TirAnalysis;
+import mc2mc.mc2lib.CommonFunction;
 import mc2mc.mc2lib.PrintMessage;
 import mc2mc.mc2lib.ReadOptions;
 
@@ -44,6 +45,7 @@ public class Mc2McTranslator {
         String mainFile = options.inputArgs.get(0);
         String outDir = options.outDir;
         int cnt = 0;
+        boolean isTameIR = false;
         while(true) {
             PrintMessage.See(cnt+"", "Round");
             TirAnalysis tira = new TirAnalysis(mainFile, parameters, outDir);
@@ -52,18 +54,23 @@ public class Mc2McTranslator {
                 break;
             }
             else {
-                tira.runAnalysis(); //main analysis
+                tira.runAnalysis(isTameIR); //main analysis
                 if (tira.getNoChange()) break;
                 mainFile = tira.getOutPath();
             }
 //            if(cnt == 0) break;
             cnt++;
         }
-        PrintMessage.See("Exit successfully");
+
+        CommonFunction.printRename();
+        int numOfChanges = CommonFunction.getNumOfChanges();
+        if(numOfChanges == 0){
+            PrintMessage.See("No vectorization");
+        }
+        else PrintMessage.See("Exit successfully with " + numOfChanges + " changes.");
         //tira.TestTirFunction();
         //tira.TirValueAnalysis();
         //tira.TestLocalAnalysis();
-
     }
 
     public static void runOptions(ReadOptions opt, JCommander jc){

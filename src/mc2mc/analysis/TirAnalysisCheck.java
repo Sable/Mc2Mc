@@ -7,6 +7,11 @@ import mc2mc.mc2lib.PrintMessage;
 import natlab.tame.tamerplus.analysis.AnalysisEngine;
 import natlab.tame.tir.*;
 import natlab.tame.tir.analysis.TIRAbstractNodeCaseHandler;
+import natlab.tame.valueanalysis.ValueFlowMap;
+import natlab.tame.valueanalysis.ValueSet;
+import natlab.tame.valueanalysis.aggrvalue.AggrValue;
+import natlab.tame.valueanalysis.basicmatrix.BasicMatrixValue;
+import natlab.tame.valueanalysis.components.shape.Shape;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,14 +20,17 @@ import java.util.Set;
 /**
  *
  */
-public class TirAnalysisTrick extends TIRAbstractNodeCaseHandler {
+public class TirAnalysisCheck extends TIRAbstractNodeCaseHandler {
 
     public Map<TIRNode, Map<String, Set<TIRNode>>> localUDMap = null;
     public Map<ASTNode, String> trickMap = null;
+    Map<ASTNode, ValueFlowMap<AggrValue<BasicMatrixValue>>> localValueMap = null;
 
-    public TirAnalysisTrick(AnalysisEngine engine){
+    public TirAnalysisCheck(AnalysisEngine engine,
+                            Map<ASTNode, ValueFlowMap<AggrValue<BasicMatrixValue>>> valueMap){
         localUDMap = engine.getUDChainAnalysis().getChain();
         trickMap = new HashMap<>();
+        localValueMap =valueMap;
     }
 
     @Override
@@ -60,7 +68,7 @@ public class TirAnalysisTrick extends TIRAbstractNodeCaseHandler {
         String trueString = arrayName + "=" + rhsName + ";";
         String falseString= node.getPrettyPrinted().trim();
         String rtn = genIfBlock(arrayName,node.getIndices(),localUDMap.get(node),trueString,falseString);
-        if(!rtn.isEmpty()){
+        if(!rtn.isEmpty() && !isScalar(node, rhsName)){
             trickMap.put(node, rtn);
         }
     }
@@ -106,6 +114,21 @@ public class TirAnalysisTrick extends TIRAbstractNodeCaseHandler {
             str = cond;
         }
         return str;
+    }
+
+    private boolean isScalar(ASTNode n, String s){
+        ValueSet<AggrValue<BasicMatrixValue>> currentValue = localValueMap.get(n).get(s);
+        if(currentValue.size() == 1){
+            for(AggrValue<BasicMatrixValue> one : currentValue){
+                Shape sp = ((BasicMatrixValue)one).getShape();  //get one
+                if(sp == null){
+                    PrintMessage.See(s, "string s");
+                }
+                if(sp.isScalar())
+                    return true;
+            }
+        }
+        return false;
     }
 
     private boolean checkIndex(String n, ASTNode currentNode){

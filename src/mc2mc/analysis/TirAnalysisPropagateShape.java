@@ -34,6 +34,7 @@ public class TirAnalysisPropagateShape extends TIRAbstractSimpleStructuralForwar
         }
         globalIfCond = new PromotedShape();
         globalIfCond.setB();
+        transposeMap = new HashMap<>();
         // for i = low:inc:up --> [getLower, getIncr=null getUpper]
     }
 
@@ -60,6 +61,7 @@ public class TirAnalysisPropagateShape extends TIRAbstractSimpleStructuralForwar
         hasTop = false;
         globalIfCond = new PromotedShape();
         globalIfCond.setB();
+        transposeMap = new HashMap<>();
     }
 
     private boolean isFunction = false;
@@ -79,6 +81,7 @@ public class TirAnalysisPropagateShape extends TIRAbstractSimpleStructuralForwar
     static boolean debug = false;
     public Map<ASTNode, Map<String, Set<TIRNode>>> localOutFlow = null;
     public Map<ASTNode, Map<String, Set<TIRNode>>> localInFlow = null;
+    public Map<ASTNode, String> transposeMap = null;
 
     @Override
     public Map<String, PromotedShape> merge(Map<String, PromotedShape> p1, Map<String, PromotedShape> p2) {
@@ -249,6 +252,9 @@ public class TirAnalysisPropagateShape extends TIRAbstractSimpleStructuralForwar
         PromotedShape ps = null;
         String psName = "unknown";
         Map<String, PromotedShape> psSet = new HashMap<>();
+        if(stmt.getPrettyPrinted().contains("mc_t57 = conn(k, j);")){
+            int xx=10;
+        }
         if (stmt instanceof TIRCallStmt) {
             Expr lhs = ((AssignStmt) stmt).getLHS();
             Expr rhs = ((AssignStmt) stmt).getRHS();
@@ -261,6 +267,9 @@ public class TirAnalysisPropagateShape extends TIRAbstractSimpleStructuralForwar
                     if (op.equals("mtimes")) { // special case
                         if (isScalar(args.getName(0).getID()) || isScalar(args.getName(1).getID()))
                             op = "times";
+                    }
+                    if(op.equals("transpose")){
+                        int xx=10;
                     }
                     if (args.size() == 1 && BuildinList.isUnaryEBIF(op)) {
                         // unary eBIF
@@ -280,6 +289,22 @@ public class TirAnalysisPropagateShape extends TIRAbstractSimpleStructuralForwar
                             int xx = 10;
                         }
                         ps = BuildinList.binaryTable(p1, p2);
+                        if(ps.isT()){
+                            int pos = p1.acceptDimTransp(p2);
+                            if(pos!=0){
+                                int doa = pos==1?0:1;
+                                int dob = pos==1?1:0;
+                                String tempVar = "mc_transp";
+                                String tempStmt = tempVar + " = transpose(" +  args.getName(doa).getID() + ");";
+                                String newString = lhs.getPrettyPrinted().trim()
+                                        + " = " + op + "(" + tempVar + ", "
+                                        +args.getName(dob).getID()
+                                        +");";
+                                ps.setP(pos==1?p1:p2); //revive
+                                ps.changeLoc(pos==1?(p1.getLoc()==0?1:0):(p2.getLoc()==0?1:0)); //transpose
+                                transposeMap.put(stmt, tempStmt+"\n"+newString);
+                            }
+                        }
                     }
                     else if(args.size() == 2 && op.equals("colon")){
                         PromotedShape p1 = currentOutSet.get(args.getName(0).getID());
@@ -293,6 +318,23 @@ public class TirAnalysisPropagateShape extends TIRAbstractSimpleStructuralForwar
                         else {
                             ps.setT();
                         }
+                    }
+                    else if(args.size()==1 && op.equals("transpose")){
+                        PromotedShape p1 = currentOutSet.get(args.getName(0).getID());
+                        ps = new PromotedShape();
+                        if(p1.isS()){
+                            ;
+                        }
+                        else if(p1.isP()){
+                            if(p1.getDim()==1);
+                            else if(p1.getDim()==2){
+                                PrintMessage.See(args.getName(0).getID());
+                                ps.setP(p1);
+                                ps.changeLoc(p1.getLoc()==0?1:0);
+                            }
+                            else ps.setT();
+                        }
+                        else ps.setT();
                     }
                     else {
                         ps = new PromotedShape();
@@ -351,7 +393,7 @@ public class TirAnalysisPropagateShape extends TIRAbstractSimpleStructuralForwar
             String arrayName = ((TIRArraySetStmt) stmt).getArrayName().getID();
             TIRCommaSeparatedList arrayList = ((TIRArraySetStmt) stmt).getIndices();
             String rhsName = ((NameExpr) ((TIRArraySetStmt) stmt).getRHS()).getName().getID();
-            if(stmt.getPrettyPrinted().contains("rtnI(i, k)")){
+            if(stmt.getPrettyPrinted().contains("sampleOut(k)")){
                 int xx=10;
             }
             ps = getArrayIndexShape(rhsName, arrayName, arrayList);
@@ -359,7 +401,15 @@ public class TirAnalysisPropagateShape extends TIRAbstractSimpleStructuralForwar
             // check left and right either match
             PromotedShape rhsNamePS = currentOutSet.get(rhsName);
             if(!rhsNamePS.acceptArraySet(ps)){
-                ps.setT();
+                if(ps.acceptArrayTransp(rhsNamePS)){
+                    String tempVar = "mc_transp_array";
+                    String tempStmt = tempVar + " = transpose(" + rhsName + ");";
+                    String newString = ((TIRArraySetStmt) stmt).getLHS().getPrettyPrinted().trim()+" = " + tempVar + ";";
+                    transposeMap.put(stmt, tempStmt+"\n"+newString);
+                }
+                else {
+                    ps.setT();
+                }
             }
         } else if (stmt instanceof TIRCopyStmt) {
             Expr rhs = ((TIRCopyStmt) stmt).getRHS();
@@ -609,7 +659,7 @@ public class TirAnalysisPropagateShape extends TIRAbstractSimpleStructuralForwar
     public void convertIfStmt(ASTNode node){
         Map<ASTNode, List<String>> newIfStmt = new HashMap<>();
         findInnermostIfStmt(node, newIfStmt);
-        List<String> newFn = CommonFunction.transformFunction(node, newIfStmt, 1); //generateNewFn
+        List<String> newFn = CommonFunction.transformFunction(node, newIfStmt, transposeMap, 1); //generateNewFn
         PrintMessage.See(newIfStmt.size()+"", "newIfStmt");
 //        PrintMessage.arrayList(newFn);
         CommonFunction.setFnHashMap(node, newFn);
