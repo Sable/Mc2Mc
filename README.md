@@ -16,8 +16,8 @@ Jar (mc2mc.jar)
 
 Scripts
 
-- `mc2mc_jar.sh`: run with the jar file
-- `runOstrich2.sh`: run with `mc2mc_jar.sh` to test all benchmarks
+- [`mc2mc_jar.sh`](mc2mc_jar.sh): run with the jar file
+- [`runOstrich2.sh`](runOstrich2.sh): run with `mc2mc_jar.sh` to test all benchmarks
     + **opt** can be either *plus* or *tir*
     + *tir* generates TameIR before vectorization
     + *plus* generates aggregated human-readable code after vectorization
