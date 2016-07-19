@@ -23,6 +23,47 @@ Scripts
     + *plus* generates aggregated human-readable code after vectorization
 
 
+## Execution
+
+### Run all benchmarks
+
+```bash
+sh runOstrich2.sh > runOstrich2.log
+```
+
+### Run a benchmark
+
+Generate vectorization code for `Black-Scholes` benchmark with the following command line.
+(Please check [`runOstrich2.sh`](runOstrich2.sh) for more examples)
+
+```
+./mc2mc_jar.sh data/ostrich2/blackscholes/runBlkSchls_new.m -args "\
+DOUBLE&1*1&REAL DOUBLE&1*?&REAL DOUBLE&1*?&REAL \
+DOUBLE&1*?&REAL DOUBLE&1*?&REAL DOUBLE&1*?&REAL \
+DOUBLE&1*?&REAL DOUBLE&1*?&REAL" \
+-out "data/ostrich2/blackscholes/plus" -plus
+```
+
+## Benchmarks
+
+### Source
+
+- Source folder: [`data/ostrich2`](data/ostrich2)
+- Benchmark testing repository (lcpc16-analysis: https://github.com/Sable/lcpc16-analysis)
+
+
+### Benchmark list
+
+- Back-Propagation (BP)
+- Black-Scholes (BS)
+- Capacitance (CAPR)
+- Crank-Nicholson (CRNI)
+- Fast Fourier Transform (FFT)
+- Monte Carlo simulation (MC)
+- Needleman-Wunsch (NW)
+- Page-Rank (PR)
+- Sparse Matrix-Vector Multiplication (SPMV)
+
 ## Options
 
 
@@ -54,39 +95,6 @@ Usage: Mc2Mc [options]
        Default: false
 ```
 
-
-## Benchmarks
-
-### Source
-
-- Source folder: [`data/ostrich2`](data/ostrich2)
-- Benchmark testing repository (lcpc16-analysis: https://github.com/Sable/lcpc16-analysis)
-
-
-### Benchmark list
-
-- Back-Propagation (BP)
-- Black-Scholes (BS)
-- Capacitance (CAPR)
-- Crank-Nicholson (CRNI)
-- Fast Fourier Transform (FFT)
-- Monte Carlo simulation (MC)
-- Needleman-Wunsch (NW)
-- Page-Rank (PR)
-- Sparse Matrix-Vector Multiplication (SPMV)
-
-## An example
-
-Generate vectorization code for `Black-Scholes` benchmark with the following command line.
-(Please check `runOstrich2.sh` for more examples)
-
-```
-./mc2mc_jar.sh data/ostrich2/blackscholes/runBlkSchls_new.m -args "\
-DOUBLE&1*1&REAL DOUBLE&1*?&REAL DOUBLE&1*?&REAL \
-DOUBLE&1*?&REAL DOUBLE&1*?&REAL DOUBLE&1*?&REAL \
-DOUBLE&1*?&REAL DOUBLE&1*?&REAL" \
--out "data/ostrich2/blackscholes/plus" -plus
-```
 
 ## Development notes
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# sh runBench.sh > runBench.log
+# sh runOstrich2.sh > runOstrich2.log
 
 dataPath=data/ostrich2
 #gitPath=/Users/wukefe/Documents/GitHub/wu/Ostrich2/benchmarks
 proc=processing
 #opt="tir"
-opt="tir"
+opt="plus"
 run="mc2mc_jar.sh"
 
 # backprop
