@@ -59,21 +59,21 @@ Usage: Mc2Mc [options]
 
 ### Source
 
-- Source folder: `data/ostrich2`
+- Source folder: [`data/ostrich2`](data/ostrich2)
 - Benchmark testing repository (lcpc16-analysis: https://github.com/Sable/lcpc16-analysis)
 
 
 ### Benchmark list
 
-- Back Propagation
-- Black-Scholes
-- Capr
-- Crni
-- FFT
-- Monte Carlo simulation
-- NW
-- Page Rank
-- SPMV
+- Back-Propagation (BP)
+- Black-Scholes (BS)
+- Capacitance (CAPR)
+- Crank-Nicholson (CRNI)
+- Fast Fourier Transform (FFT)
+- Monte Carlo simulation (MC)
+- Needleman-Wunsch (NW)
+- Page-Rank (PR)
+- Sparse Matrix-Vector Multiplication (SPMV)
 
 ## An example
 
