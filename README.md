@@ -2,9 +2,9 @@
 
 Mc2Mc is a MATLAB to MATLAB source code translator designed for MATLAB vectorization.
 
-## Configuration
+## Configurations
 
-Platforms:
+Development platforms:
 
 - Tamer framework (Developed at Sable/McGill)
 - IntelliJ IDEA (tested under v15.0.4)
@@ -12,15 +12,18 @@ Platforms:
 Jar (mc2mc.jar)
 
 - `out/artifacts/mc2mc_jar/mc2mc.jar`
-- How to build it? [StackOverflow](http://stackoverflow.com/questions/1082580/how-to-build-jars-from-intellij-properly)
+    + [Built with IntelliJ IDEA](http://stackoverflow.com/questions/1082580/how-to-build-jars-from-intellij-properly); or
+    + Using Ant: `ant jar`; or
+    + Download from the [latest release](releases/latest) 
+- Require [`libs/McLabCore.jar`](https://github.com/Sable/mclab-core/releases)
 
 Scripts
 
 - [`mc2mc_jar.sh`](mc2mc_jar.sh): run with the jar file
 - [`runOstrich2.sh`](runOstrich2.sh): run with `mc2mc_jar.sh` to test all benchmarks
     + **opt** can be either *plus* or *tir*
-    + *tir* generates TameIR before vectorization
-    + *plus* generates aggregated human-readable code after vectorization
+    + *tir*: generates TameIR before vectorization
+    + *plus*: generates aggregated human-readable code after vectorization
 
 
 ## Execution
@@ -68,7 +71,7 @@ DOUBLE&1*?&REAL DOUBLE&1*?&REAL" \
 
 
 ```
-> java -jar mc2mc.jar --help
+> ./mc2mc_jar.sh --help
 
 Usage: Mc2Mc [options] 
   Options:
@@ -107,3 +110,20 @@ tv.GetViewer();
 
 
 More detail can be found at [wiki](https://github.com/Sable/Mc2Mc/wiki/TamerViewer).
+
+## Copyright and License
+
+Copyright 2016-2017 Hanfeng Chen, Alexander Krolik, Erick Lavoie, Laurie Hendren 
+and McGill University.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this work except in compliance with the License. You may obtain a copy
+of the License in the LICENSE file, or at:
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations
+under the LICENSE.
