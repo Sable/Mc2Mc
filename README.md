@@ -11,11 +11,11 @@ Development platforms:
 
 Jar (mc2mc.jar)
 
+- Require [`libs/McLabCore.jar`](https://github.com/Sable/mclab-core/releases)
 - `out/artifacts/mc2mc_jar/mc2mc.jar`
     + [Built with IntelliJ IDEA](http://stackoverflow.com/questions/1082580/how-to-build-jars-from-intellij-properly); or
     + Using Ant: `ant jar`; or
-    + Download from the [latest release](releases/latest) 
-- Require [`libs/McLabCore.jar`](https://github.com/Sable/mclab-core/releases)
+    + Download from the [latest release](/releases/latest) 
 
 Scripts
 
