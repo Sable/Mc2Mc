@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+
+<project name="mc2mc" basedir=".">
+    <!-- id = "mc2mc" -->
+    <property name="id" value="mc2mc" />
+    <property name="out.ant" value="out/ant"/>
+    <property name="out.jar" value="${out.ant}/jar"/>
+    <property name="out.obj" value="${out.ant}/classes"/>
+    <property name="out.lib" value="libs"/>
+    <property name="out.des" value="out/artifacts/mc2mc_jar"/>
+    <property name="mlib" value="McLabCore.jar"/>
+
+    <target name="compile" description="compile java files">
+        <mkdir dir="${out.obj}" />
+        <javac srcdir="src/mc2mc" destdir="${out.obj}">
+            <classpath>
+                <path location="${out.lib}/${mlib}" />
+            </classpath>
+        </javac>
+    </target>
+
+    <!-- creating a jar file -->
+    <target name="jar" depends="compile" description="create a jar file">
+        <mkdir dir="${out.jar}" />
+        <jar destfile="${out.jar}/mc2mc.jar" basedir="${out.obj}">
+            <fileset dir="src">
+                <include name="**/*.java" />
+            </fileset>
+            <!-- include library jars -->
+            <zipgroupfileset dir="libs" includes="${mlib}"/>
+            <manifest>
+                <attribute name="Main-Class" value="mc2mc.Mc2McTranslator" />
+            </manifest>
+        </jar>
+        <mkdir dir="${out.des}" />
+        <copy file="${out.jar}/mc2mc.jar" todir="${out.des}"/>
+    </target>
+
+    <!-- display usage -->
+    <target name="help">
+        <java jar="${out.jar}/mc2mc.jar" fork="true">
+            <classpath>
+                <path location="${out.lib}/${mlib}" />
+            </classpath>
+            <arg line="--help"/>
+        </java>
+    </target>
+</project>
